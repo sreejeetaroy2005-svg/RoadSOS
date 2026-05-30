@@ -1,7 +1,8 @@
 # 🚨 ROADSOS — Road Accident Emergency Assistance
 
-> A production-ready emergency assistance web app built for hackathon submission.  
-> Helps road accident victims and bystanders instantly find nearby emergency services, share live location, and access first-aid guidance — even offline.
+> A production-ready emergency assistance web app built for hackathon submission.
+> Helps road accident victims and bystanders instantly find nearby emergency services,
+> share live location, and access first-aid guidance — even when fully offline.
 
 ---
 
@@ -11,9 +12,12 @@
 |---|---|
 | One-tap SOS with live GPS | ✅ |
 | Live Leaflet.js map (OpenStreetMap) | ✅ |
-| Nearby services sorted by real distance | ✅ |
+| Nearby services sorted by real GPS distance | ✅ |
 | Firebase Firestore backend | ✅ |
-| Offline mode with localStorage cache | ✅ |
+| **PWA — installable, works fully offline** | ✅ |
+| **Service Worker with cache strategies** | ✅ |
+| **Global services: 7 countries, 65 total** | ✅ |
+| **Error handling on all API routes** | ✅ |
 | Voice commands (Web Speech API) | ✅ |
 | First-aid quick guide | ✅ |
 | Incident report form | ✅ |
@@ -28,11 +32,12 @@
 | Layer | Technology |
 |---|---|
 | Frontend | Pure HTML, CSS, Vanilla JavaScript |
-| Map | Leaflet.js + OpenStreetMap |
+| Map | Leaflet.js + OpenStreetMap (no API key needed) |
 | Backend | Node.js + Express |
 | Database | Firebase Firestore |
+| Offline | Service Worker + Cache API (PWA) |
 | Voice | Web Speech API |
-| Fonts | Inter + JetBrains Mono (Google Fonts) |
+| Fonts | Space Grotesk + Inter + JetBrains Mono |
 
 ---
 
@@ -42,43 +47,24 @@
 - Node.js v18 or higher
 - A Firebase project with Firestore enabled in **test mode**
 
-### 1. Clone / open the project
+### 1. Install dependencies
 
 ```bash
 cd road_sos
-```
-
-### 2. Install dependencies
-
-```bash
 npm install
 ```
 
-### 3. Configure environment
-
-The `.env` file is already set up with the project's Firebase credentials:
-
-```env
-PORT=3000
-FIREBASE_PROJECT_ID=roadsos-24b26
-FIREBASE_API_KEY=...
-```
-
-To use your own Firebase project, update `.env` with your config values.
-
-### 4. Seed Firestore (first time only)
+### 2. Seed Firestore (first time only)
 
 ```bash
+# Seed India services + contacts + first aid
 npm run seed
+
+# Seed global services (7 countries)
+npm run seed:global
 ```
 
-This writes all 68 documents to Firestore:
-- 34 emergency services
-- 10 national emergency contacts
-- 18 international numbers
-- 6 first-aid guides
-
-### 5. Start the server
+### 3. Start the server
 
 ```bash
 npm start
@@ -98,14 +84,17 @@ npm run dev
 
 ```
 road_sos/
-├── index.html              ← Full frontend (HTML + CSS + JS, single file)
+├── index.html              ← Full frontend (HTML + CSS + JS)
+├── manifest.json           ← PWA manifest (installable app)
+├── sw.js                   ← Service Worker (offline support)
 ├── server.js               ← Express server entry point
 ├── package.json
 ├── .env                    ← Firebase + server config
 │
 ├── server/
-│   ├── firebase.js         ← Firebase client SDK initialisation
-│   ├── seed.js             ← One-time Firestore seed script
+│   ├── firebase.js         ← Firebase client SDK init
+│   ├── seed.js             ← India data seed (run once)
+│   ├── seed_global.js      ← Global data seed (run once)
 │   └── routes/
 │       ├── services.js     ← /api/services
 │       ├── contacts.js     ← /api/contacts
@@ -113,8 +102,6 @@ road_sos/
 │       ├── reports.js      ← /api/reports
 │       ├── firstaid.js     ← /api/firstaid
 │       └── location.js     ← /api/location/reverse
-│
-└── data/                   ← (legacy SQLite, no longer used)
 ```
 
 ---
@@ -128,11 +115,11 @@ GET /api/health
 
 ### Emergency Services
 ```
-GET  /api/services                    List all services
+GET  /api/services                    List all (65 services, 7 countries)
 GET  /api/services?category=hospital  Filter by category
-GET  /api/services?lat=28.6&lng=77.2  Sort by distance
-GET  /api/services?q=aiims            Search by name/area
-GET  /api/services/nearby?lat=&lng=   Nearest services (Haversine)
+GET  /api/services?lat=28.6&lng=77.2  Sort by GPS distance (Haversine)
+GET  /api/services?q=aiims            Search by name/area/city
+GET  /api/services/nearby?lat=&lng=   Nearest services within radius
 GET  /api/services/:id                Single service
 POST /api/services                    Add new service
 PUT  /api/services/:id                Update status/rating
@@ -140,7 +127,7 @@ PUT  /api/services/:id                Update status/rating
 
 ### Contacts
 ```
-GET    /api/contacts                        National emergency numbers
+GET    /api/contacts                        National emergency numbers (India)
 GET    /api/contacts/international          18 country numbers
 GET    /api/contacts/personal/:deviceId     User's saved contacts
 POST   /api/contacts/personal               Save a contact
@@ -182,7 +169,7 @@ POST /api/location/cache       Cache device location
 
 | Collection | Documents | Description |
 |---|---|---|
-| `services` | 34 | Hospitals, ambulance, police, towing, puncture, trauma |
+| `services` | **65** | 34 India + 31 global (7 countries) |
 | `emergencyContacts` | 10 | India national numbers (112, 108, 100…) |
 | `internationalNumbers` | 18 | Global emergency numbers |
 | `firstAid` | 6 | Step-by-step first-aid guides |
@@ -190,24 +177,88 @@ POST /api/location/cache       Cache device location
 | `sosEvents` | grows | Every SOS tap logged with GPS + timestamp |
 | `incidentReports` | grows | Accident report form submissions |
 
-View live data: [Firebase Console → Firestore](https://console.firebase.google.com/project/roadsos-24b26/firestore)
+---
+
+## 🌍 Global Coverage
+
+Services are seeded for **7 countries across 4 continents**:
+
+| Country | City | Services |
+|---|---|---|
+| 🇮🇳 India | Delhi, Gurugram, Bengaluru | 34 |
+| 🇺🇸 USA | New York | 5 |
+| 🇬🇧 UK | London | 5 |
+| 🇦🇺 Australia | Sydney | 4 |
+| 🇦🇪 UAE | Dubai | 5 |
+| 🇸🇬 Singapore | Singapore | 4 |
+| 🇩🇪 Germany | Berlin | 4 |
+| 🇯🇵 Japan | Tokyo | 4 |
+
+Each entry has the correct local emergency number, real GPS coordinates, and real phone numbers.
+
+---
+
+## 📴 Offline Mode — How It Works
+
+This is the most important feature for the hackathon brief.
+
+### What happens without internet
+
+1. **Service Worker intercepts all requests** before they hit the network.
+2. **App shell** (HTML, CSS, JS, Leaflet, fonts) → served from **Cache First** — loads in milliseconds, zero network needed.
+3. **API calls** (`/api/services`, `/api/contacts`, `/api/firstaid`) → **Network First with cache fallback** — tries the server, but if offline, returns the last cached response automatically.
+4. **Map tiles** (OpenStreetMap) → **Cache First** — previously viewed map areas load offline.
+
+### What works with zero internet
+- Full app loads (HTML, CSS, JS)
+- All emergency contacts visible
+- All first-aid guides accessible
+- Last known GPS location shown
+- SOS button works (calls `tel:112` directly)
+- Call and SMS buttons work (use device dialer)
+- Incident reports saved to localStorage, synced when back online
+
+### PWA — Install on phone
+The app is installable as a Progressive Web App:
+- Android Chrome: tap **"Add to Home Screen"** in the browser menu
+- iOS Safari: tap **Share → Add to Home Screen**
+- Home screen shortcuts: **Call 112** and **Call Ambulance 108** directly from the icon
+
+### Service Worker strategies
+
+| Request type | Strategy | Behaviour |
+|---|---|---|
+| App shell (`/`, CSS, JS) | Cache First | Instant load, no network needed |
+| API calls (`/api/*`) | Network First + Cache | Live data when online, cached when offline |
+| Map tiles (OSM) | Cache First | Viewed areas work offline |
+| External CDN (Leaflet, fonts) | Cache First | Cached after first load |
+
+---
+
+## 🛡 Error Handling
+
+Every API route handler is wrapped in `try/catch`. If Firestore has a timeout, quota error, or network blip:
+
+- All routes return a clean JSON error response (`500` with `{ success: false, error: "..." }`)
+- The Express process **never crashes**
+- The SOS POST endpoint has a special rule: even if Firestore is completely unreachable, it still returns `201` with the emergency numbers — **SOS must never fail**
 
 ---
 
 ## 🗺 Map Features
 
-- **OpenStreetMap** tiles via Leaflet.js (no API key needed)
+- OpenStreetMap tiles via Leaflet.js — **no API key needed**
 - Dark-themed map with custom CSS filter
 - Color-coded markers per service category
 - Blue pulsing dot for live user location
 - Popup on each marker: name, phone, status
-- "Center on me" button
+- Works offline for previously viewed areas
 
 ---
 
 ## 🎙 Voice Commands
 
-Tap the microphone button or click any command chip:
+Tap the microphone or click any command chip:
 
 | Say | Action |
 |---|---|
@@ -220,43 +271,31 @@ Tap the microphone button or click any command chip:
 | "First aid" | Scrolls to first-aid section |
 | "Map" | Scrolls to live map |
 
-> Voice works best in Chrome and Edge. Requires microphone permission.
-
----
-
-## 📴 Offline Mode
-
-When internet is unavailable:
-- Orange banner appears: **"OFFLINE MODE ACTIVE"**
-- Alert popup notifies the user
-- All emergency data (services, contacts, first-aid) remains accessible from localStorage cache
-- Last known GPS location is shown from cache
-- SOS, call, and SMS buttons still work (they use `tel:` and `sms:` links)
-- Incident reports are saved locally and can sync when back online
-
----
-
-## 📱 Browser Support
-
-| Browser | Support |
-|---|---|
-| Chrome 90+ | ✅ Full (GPS, Voice, Share) |
-| Edge 90+ | ✅ Full |
-| Firefox 90+ | ✅ Partial (no voice) |
-| Safari iOS 15+ | ✅ Partial (no voice) |
-| Samsung Internet | ✅ Partial |
+> Works best in Chrome and Edge. Requires microphone permission.
 
 ---
 
 ## 🏆 Hackathon Evaluation Criteria
 
-| Criterion | Implementation |
+| Criterion | What was built |
 |---|---|
-| **Reliability & data accuracy** | Firebase Firestore backend, real Indian emergency numbers, Haversine distance sorting |
-| **Number of contacts fetched** | 34 services + 10 national + 18 international = 62 contacts |
-| **Offline functionality** | localStorage cache, offline banner, all data accessible without network |
-| **Innovation** | Live map, voice commands, nearest hospital auto-detection in SOS, real-time GPS |
-| **Information integration across countries** | 18 countries with correct emergency numbers |
+| **Reliability & data accuracy** | Firebase Firestore backend, real phone numbers, Haversine distance sorting, try/catch on every route |
+| **Number of contacts fetched** | 65 services + 10 national + 18 international = **93 contacts** |
+| **Offline functionality** | Service Worker with Cache First + Network First strategies. Full app loads offline after first visit. PWA installable. |
+| **Innovation** | Live map, voice commands, nearest hospital auto-detection in SOS, real-time GPS, background sync |
+| **Information integration across countries** | 7 countries with real services + 18 countries with emergency numbers |
+
+---
+
+## 📱 Browser Support
+
+| Browser | GPS | Voice | PWA Install | Offline |
+|---|---|---|---|---|
+| Chrome 90+ | ✅ | ✅ | ✅ | ✅ |
+| Edge 90+ | ✅ | ✅ | ✅ | ✅ |
+| Firefox 90+ | ✅ | ❌ | ❌ | ✅ |
+| Safari iOS 15+ | ✅ | ❌ | ✅ (Add to HS) | ✅ |
+| Samsung Internet | ✅ | ✅ | ✅ | ✅ |
 
 ---
 

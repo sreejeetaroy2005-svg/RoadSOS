@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="theme-color" content="#07090f"/>
+<title>ROADSOS — Road Accident Emergency Assistance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+/* ═══════════════════════════════════════════════
+   ROADSOS — Design System
+═══════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#e8192c;--red-d:#a8111f;--red-l:#ff5c6a;--red-g:rgba(232,25,44,.15);
+  --orange:#ff7c2a;--yellow:#ffc542;--green:#00d68f;--blue:#3ecfff;--purple:#9b8afb;
+  --bg:#07090f;--bg2:#0c0f18;--bg3:#111520;--bg4:#171d2b;
+  --card:#0e1219;--card2:#121824;--card3:#161e2c;
+  --b:rgba(255,255,255,.06);--bh:rgba(255,255,255,.13);
+  --br:rgba(232,25,44,.3);--bg-g:rgba(0,214,143,.1);--bb:rgba(62,207,255,.1);
+  --t:#eef2f7;--t2:#8896a8;--t3:#3d4f63;
+  --font:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;
+  --r:14px;--rs:8px;--rl:20px;--rxl:28px;--rf:9999px;
+  --sh:0 4px 24px rgba(0,0,0,.5);
+  --sh-r:0 0 40px rgba(232,25,44,.22),0 0 80px rgba(232,25,44,.07);
+  --sh-g:0 0 20px rgba(0,214,143,.2);
+}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--font);background:var(--bg);color:var(--t);
+  min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;
+  background-image:
+    radial-gradient(ellipse 80% 40% at 50% -5%,rgba(232,25,44,.08) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 30% at 90% 90%,rgba(62,207,255,.04) 0%,transparent 50%);
+}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;border:none;outline:none;font-family:var(--font)}
+input,textarea,select{font-family:var(--font)}
+::selection{background:var(--red-g);color:var(--red-l)}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:4px}
+
+/* ── STATUS BAR ── */
+#status-bar{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  background:rgba(7,9,15,.97);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--b);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:5px 16px;font-size:10.5px;color:var(--t3);gap:8px}
+.si{display:flex;align-items:center;gap:5px}
+.sd{width:6px;height:6px;border-radius:50%;background:var(--t3);flex-shrink:0;transition:all .3s}
+.sd.on{background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 3s ease infinite}
+.sd.warn{background:var(--yellow)}
+.sd.err{background:var(--red);box-shadow:0 0 6px var(--red)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* ── OFFLINE BANNER ── */
+#offline-banner{
+  display:none;position:fixed;top:28px;left:0;right:0;z-index:999;
+  background:linear-gradient(90deg,#c05a00,#e06b1f);color:#fff;
+  text-align:center;padding:7px 16px;font-size:12px;font-weight:600;
+  letter-spacing:.5px;animation:slideDown .3s ease}
+#offline-banner.show{display:block}
+@keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}
+
+/* ── HEADER ── */
+header{
+  position:sticky;top:28px;z-index:900;
+  background:rgba(7,9,15,.93);backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--b);padding:11px 18px;
+  display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:11px}
+.logo-icon{
+  width:38px;height:38px;border-radius:11px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--red),var(--red-d));
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  box-shadow:var(--sh-r)}
+.logo-text{
+  font-size:19px;font-weight:900;letter-spacing:.3px;
+  background:linear-gradient(135deg,#fff 40%,var(--t2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo-text span{
+  background:linear-gradient(135deg,var(--red-l),var(--red));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo-sub{font-size:8.5px;color:var(--t3);letter-spacing:2.5px;text-transform:uppercase;margin-top:1px}
+.hdr-btns{display:flex;gap:6px}
+.ibtn{
+  width:36px;height:36px;border-radius:var(--rs);
+  background:var(--bg3);border:1px solid var(--b);
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;color:var(--t2);transition:all .2s}
+.ibtn:hover{background:var(--bg4);border-color:var(--bh);color:var(--t);transform:translateY(-1px)}
+
+/* ── LAYOUT ── */
+main{padding-top:28px}
+.sec{padding:20px 16px;max-width:640px;margin:0 auto}
+.sec-title{
+  font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;
+  color:var(--t3);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--b)}
+.card{
+  background:var(--card);border:1px solid var(--b);border-radius:var(--rl);
+  padding:18px;box-shadow:var(--sh);transition:border-color .2s}
+.card:hover{border-color:var(--bh)}
+.divider{height:1px;background:var(--b);margin:14px 0}
+</style>
+</head>
+<style>
+/* ── SOS HERO ── */
+#sos-sec{
+  position:relative;overflow:hidden;
+  background:linear-gradient(180deg,#130408 0%,#0a0c14 55%,var(--bg) 100%);
+  padding:36px 16px 28px;text-align:center;border-bottom:1px solid var(--b)}
+#sos-sec::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 70% 55% at 50% 0%,rgba(232,25,44,.14) 0%,transparent 70%)}
+.sos-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:9.5px;letter-spacing:3px;text-transform:uppercase;color:var(--red-l);
+  background:rgba(232,25,44,.08);border:1px solid var(--br);
+  padding:4px 14px;border-radius:var(--rf);margin-bottom:12px}
+.sos-h1{
+  font-size:26px;font-weight:900;letter-spacing:-.5px;margin-bottom:6px;
+  background:linear-gradient(135deg,#fff,var(--t2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sos-sub{font-size:13px;color:var(--t3);margin-bottom:30px}
+
+/* SOS Button */
+#sos-btn{
+  position:relative;width:172px;height:172px;border-radius:50%;
+  background:conic-gradient(from 180deg,#ff1a2e,#ff6b6b,#ff3b3b,#cc1f1f,#ff1a2e);
+  color:#fff;font-size:13px;font-weight:800;letter-spacing:3px;text-transform:uppercase;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  margin:0 auto 26px;z-index:1;
+  box-shadow:0 0 0 0 rgba(232,25,44,.5),var(--sh-r),inset 0 2px 0 rgba(255,255,255,.15);
+  animation:sos-p 2.2s ease-out infinite;transition:transform .15s,filter .15s}
+#sos-btn::before{content:'';position:absolute;inset:-5px;border-radius:50%;
+  border:2px solid rgba(232,25,44,.25);animation:sos-r 2.2s ease-out infinite}
+#sos-btn::after{content:'';position:absolute;inset:-14px;border-radius:50%;
+  border:1px solid rgba(232,25,44,.12);animation:sos-r 2.2s ease-out infinite .35s}
+#sos-btn:hover{transform:scale(1.04);filter:brightness(1.1)}
+#sos-btn:active{transform:scale(.96)}
+#sos-btn .sos-icon{font-size:42px;line-height:1}
+@keyframes sos-p{
+  0%{box-shadow:0 0 0 0 rgba(232,25,44,.55),var(--sh-r),inset 0 2px 0 rgba(255,255,255,.15)}
+  70%{box-shadow:0 0 0 34px rgba(232,25,44,0),var(--sh-r),inset 0 2px 0 rgba(255,255,255,.15)}
+  100%{box-shadow:0 0 0 0 rgba(232,25,44,0),var(--sh-r),inset 0 2px 0 rgba(255,255,255,.15)}}
+@keyframes sos-r{0%{transform:scale(1);opacity:1}100%{transform:scale(1.6);opacity:0}}
+
+/* SOS activated state */
+#sos-btn.activated{animation:sos-flash .4s ease 3,sos-p 2.2s ease-out infinite 1.2s}
+@keyframes sos-flash{0%,100%{filter:brightness(1)}50%{filter:brightness(1.5)}}
+
+.sos-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.sab{
+  padding:9px 18px;border-radius:var(--rf);font-size:12px;font-weight:600;
+  display:flex;align-items:center;gap:6px;transition:all .2s;letter-spacing:.2px}
+.sab.r{background:rgba(232,25,44,.1);border:1px solid var(--br);color:var(--red-l)}
+.sab.o{background:rgba(255,124,42,.1);border:1px solid rgba(255,124,42,.35);color:var(--orange)}
+.sab.b{background:var(--bb);border:1px solid rgba(62,207,255,.3);color:var(--blue)}
+.sab.g{background:var(--bg-g);border:1px solid rgba(0,214,143,.3);color:var(--green)}
+.sab:hover{transform:translateY(-2px);filter:brightness(1.2);box-shadow:0 4px 16px rgba(0,0,0,.3)}
+.sab:active{transform:translateY(0)}
+
+/* ── LOCATION CARD ── */
+#loc-card{background:linear-gradient(135deg,#091628,var(--card));border-color:rgba(62,207,255,.14)}
+.loc-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;gap:12px}
+.loc-addr{font-size:15px;font-weight:700;margin-bottom:3px;line-height:1.3}
+.loc-det{font-size:12px;color:var(--t2)}
+.loc-coords{font-size:11px;color:var(--blue);font-family:var(--mono);margin-top:4px}
+.loc-acc{
+  display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--green);
+  margin-top:10px;background:var(--bg-g);padding:3px 10px;border-radius:var(--rf);
+  border:1px solid rgba(0,214,143,.25)}
+.ref-btn{
+  padding:7px 13px;border-radius:var(--rf);font-size:11px;font-weight:600;
+  background:var(--bb);border:1px solid rgba(62,207,255,.3);color:var(--blue);
+  transition:all .2s;white-space:nowrap;flex-shrink:0}
+.ref-btn:hover{background:rgba(62,207,255,.2);transform:translateY(-1px)}
+
+/* ── MAP ── */
+#map-container{
+  border-radius:var(--r);overflow:hidden;border:1px solid var(--b);
+  margin-bottom:14px;position:relative}
+#emergency-map{height:260px;width:100%;background:var(--bg3)}
+.map-overlay{
+  position:absolute;top:10px;right:10px;z-index:500;
+  display:flex;flex-direction:column;gap:6px}
+.map-btn{
+  width:34px;height:34px;border-radius:var(--rs);
+  background:rgba(14,18,25,.9);border:1px solid var(--b);
+  color:var(--t2);font-size:14px;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;backdrop-filter:blur(8px)}
+.map-btn:hover{background:var(--bg4);color:var(--t);border-color:var(--bh)}
+.map-legend{
+  position:absolute;bottom:10px;left:10px;z-index:500;
+  background:rgba(14,18,25,.9);border:1px solid var(--b);
+  border-radius:var(--rs);padding:8px 10px;backdrop-filter:blur(8px)}
+.map-legend-item{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--t2);margin-bottom:3px}
+.map-legend-item:last-child{margin-bottom:0}
+.map-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* ── SERVICES ── */
+.cat-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:14px;scrollbar-width:none}
+.cat-tabs::-webkit-scrollbar{display:none}
+.cat-tab{
+  padding:7px 15px;border-radius:var(--rf);font-size:12px;font-weight:600;
+  white-space:nowrap;transition:all .2s;background:var(--bg3);border:1px solid var(--b);color:var(--t2)}
+.cat-tab.active{background:var(--red);border-color:var(--red);color:#fff;box-shadow:0 0 18px rgba(232,25,44,.35)}
+.cat-tab:hover:not(.active){border-color:var(--bh);color:var(--t);background:var(--bg4)}
+.srch-bar{display:flex;gap:8px;margin-bottom:14px}
+.srch-inp{
+  flex:1;padding:11px 16px;border-radius:var(--r);background:var(--bg3);border:1px solid var(--b);
+  color:var(--t);font-size:13px;transition:all .2s}
+.srch-inp:focus{border-color:rgba(232,25,44,.5);outline:none;background:var(--bg4);box-shadow:0 0 0 3px rgba(232,25,44,.08)}
+.srch-inp::placeholder{color:var(--t3)}
+.svc-list{display:flex;flex-direction:column;gap:8px}
+
+/* Service Card — enhanced */
+.svc-card{
+  background:var(--card);border:1px solid var(--b);border-radius:var(--r);
+  padding:14px 16px;display:flex;align-items:center;gap:13px;
+  transition:all .25s;position:relative;overflow:hidden}
+.svc-card::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--cat-color,var(--red));opacity:0;transition:opacity .2s}
+.svc-card:hover{border-color:var(--bh);background:var(--card2);transform:translateX(4px);box-shadow:var(--sh)}
+.svc-card:hover::before{opacity:1}
+.svc-icon{
+  width:48px;height:48px;border-radius:var(--rs);
+  display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;
+  transition:transform .2s}
+.svc-card:hover .svc-icon{transform:scale(1.08)}
+.svc-info{flex:1;min-width:0}
+.svc-name{font-size:14px;font-weight:700;margin-bottom:4px;letter-spacing:-.1px}
+.svc-meta{font-size:11px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:4px}
+.svc-dist{color:var(--orange);font-weight:700;font-family:var(--mono);font-size:11px}
+.svc-st{font-size:9.5px;padding:2px 8px;border-radius:var(--rf);font-weight:700;letter-spacing:.5px}
+.svc-st.open{background:rgba(0,214,143,.12);color:var(--green);border:1px solid rgba(0,214,143,.2)}
+.svc-st.busy{background:rgba(255,197,66,.12);color:var(--yellow);border:1px solid rgba(255,197,66,.2)}
+.svc-st.closed{background:rgba(61,79,99,.2);color:var(--t3);border:1px solid var(--b)}
+.svc-phone{font-size:11px;color:var(--t3);font-family:var(--mono)}
+.svc-acts{display:flex;gap:6px;flex-shrink:0;flex-direction:column}
+.call-btn{
+  width:38px;height:38px;border-radius:var(--rs);background:var(--bg-g);
+  border:1px solid rgba(0,214,143,.28);color:var(--green);font-size:16px;
+  display:flex;align-items:center;justify-content:center;transition:all .2s}
+.call-btn:hover{background:rgba(0,214,143,.2);transform:scale(1.1);box-shadow:var(--sh-g)}
+.dir-btn{
+  width:38px;height:38px;border-radius:var(--rs);background:var(--bb);
+  border:1px solid rgba(62,207,255,.28);color:var(--blue);font-size:14px;
+  display:flex;align-items:center;justify-content:center;transition:all .2s}
+.dir-btn:hover{background:rgba(62,207,255,.2);transform:scale(1.1)}
+
+/* Emergency badge */
+.emg-badge{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:9px;padding:2px 7px;border-radius:var(--rf);font-weight:700;letter-spacing:.5px;
+  background:rgba(232,25,44,.12);color:var(--red-l);border:1px solid rgba(232,25,44,.2)}
+
+/* Loading skeleton */
+.skeleton{
+  background:linear-gradient(90deg,var(--bg3) 25%,var(--bg4) 50%,var(--bg3) 75%);
+  background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:var(--rs)}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skel-card{height:80px;margin-bottom:8px}
+</style>
+<style>
+/* ── CONTACTS ── */
+.contacts-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.contact-card{
+  background:var(--card);border:1px solid var(--b);border-radius:var(--r);
+  padding:14px;display:flex;flex-direction:column;gap:6px;transition:all .2s}
+.contact-card:hover{border-color:var(--bh);background:var(--card2);transform:translateY(-2px)}
+.contact-icon{font-size:24px}
+.contact-name{font-size:11px;font-weight:600;color:var(--t2);letter-spacing:.3px}
+.contact-number{font-size:20px;font-weight:800;color:var(--t);font-family:var(--mono);letter-spacing:-.5px}
+.contact-acts{display:flex;gap:6px;margin-top:4px}
+.cc-btn{flex:1;padding:8px;border-radius:var(--rs);font-size:12px;font-weight:600;transition:all .2s}
+.cc-call{background:var(--bg-g);border:1px solid rgba(0,214,143,.28);color:var(--green)}
+.cc-call:hover{background:rgba(0,214,143,.2);transform:translateY(-1px)}
+.cc-sms{background:var(--bb);border:1px solid rgba(62,207,255,.28);color:var(--blue)}
+.cc-sms:hover{background:rgba(62,207,255,.2);transform:translateY(-1px)}
+.add-form{
+  margin-top:14px;padding:16px;background:var(--bg3);
+  border:1px dashed rgba(255,255,255,.1);border-radius:var(--r)}
+.add-form h4{font-size:13px;margin-bottom:12px;color:var(--t2);font-weight:600}
+.form-row{display:flex;gap:8px;margin-bottom:10px}
+.fi{
+  flex:1;padding:10px 13px;border-radius:var(--rs);background:var(--bg4);
+  border:1px solid var(--b);color:var(--t);font-size:13px;transition:all .2s}
+.fi:focus{border-color:rgba(232,25,44,.45);outline:none;box-shadow:0 0 0 3px rgba(232,25,44,.07)}
+.fi::placeholder{color:var(--t3)}
+.save-btn{
+  padding:10px 20px;border-radius:var(--rs);font-size:13px;font-weight:700;
+  background:var(--red);color:#fff;transition:all .2s;box-shadow:0 4px 14px rgba(232,25,44,.3)}
+.save-btn:hover{background:var(--red-d);transform:translateY(-1px)}
+
+/* ── COUNTRIES ── */
+.countries-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.country-card{
+  background:var(--card);border:1px solid var(--b);border-radius:var(--rs);
+  padding:11px 8px;text-align:center;transition:all .2s;cursor:pointer}
+.country-card:hover{border-color:var(--bh);background:var(--card2);transform:translateY(-2px)}
+.cf{font-size:24px;margin-bottom:4px}
+.cn{font-size:10px;font-weight:600;color:var(--t2)}
+.cnum{font-size:14px;font-weight:800;color:var(--red-l);font-family:var(--mono)}
+.ctype{font-size:9px;color:var(--t3);margin-top:2px}
+
+/* ── OFFLINE TOOLKIT ── */
+.toolkit-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tk-item{
+  background:var(--bg3);border:1px solid var(--b);border-radius:var(--r);
+  padding:16px;text-align:center;transition:all .25s;cursor:pointer}
+.tk-item:hover{border-color:rgba(255,124,42,.4);transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.tk-icon{font-size:30px;margin-bottom:8px}
+.tk-title{font-size:13px;font-weight:700;margin-bottom:3px}
+.tk-desc{font-size:11px;color:var(--t3)}
+
+/* ── VOICE ── */
+#voice-sec .card{background:linear-gradient(135deg,#091409,var(--card));border-color:rgba(0,214,143,.12)}
+.voice-hdr{display:flex;align-items:center;gap:13px;margin-bottom:16px}
+.voice-orb{
+  width:54px;height:54px;border-radius:50%;flex-shrink:0;
+  background:radial-gradient(circle,#0d2a0d,#091409);
+  border:2px solid rgba(0,214,143,.4);
+  display:flex;align-items:center;justify-content:center;font-size:22px;transition:all .3s}
+.voice-orb.listening{animation:vorb 1s ease-in-out infinite;box-shadow:0 0 24px rgba(0,214,143,.4)}
+@keyframes vorb{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+.voice-title{font-size:16px;font-weight:800}
+.voice-sub{font-size:12px;color:var(--t2);margin-top:2px}
+#voice-btn{
+  width:100%;padding:13px;border-radius:var(--r);font-size:14px;font-weight:700;
+  background:var(--bg-g);border:1px solid rgba(0,214,143,.3);color:var(--green);
+  transition:all .2s;margin-bottom:13px;letter-spacing:.3px}
+#voice-btn:hover{background:rgba(0,214,143,.18)}
+#voice-btn.active{background:rgba(0,214,143,.22);animation:vorb 1s infinite}
+.vcmds{display:flex;flex-wrap:wrap;gap:6px}
+.vcmd{
+  padding:5px 11px;border-radius:var(--rf);font-size:11px;
+  background:var(--bg4);border:1px solid var(--b);color:var(--t2);
+  cursor:pointer;transition:all .2s}
+.vcmd:hover{border-color:rgba(0,214,143,.3);color:var(--green)}
+#voice-out{
+  margin-top:12px;padding:11px 14px;border-radius:var(--r);
+  background:var(--bg4);font-size:13px;color:var(--green);display:none;
+  border:1px solid rgba(0,214,143,.15);line-height:1.5}
+#voice-out.show{display:block}
+
+/* ── FIRST AID ── */
+.fa-list{display:flex;flex-direction:column;gap:8px}
+.fa-item{background:var(--card);border:1px solid var(--b);border-radius:var(--r);overflow:hidden;transition:border-color .2s}
+.fa-item:hover{border-color:var(--bh)}
+.fa-hdr{
+  padding:14px 16px;display:flex;align-items:center;justify-content:space-between;
+  cursor:pointer;transition:background .2s}
+.fa-hdr:hover{background:var(--card2)}
+.fa-hdr-l{display:flex;align-items:center;gap:11px}
+.fa-icon{font-size:20px}
+.fa-title{font-size:14px;font-weight:700}
+.fa-chev{font-size:11px;color:var(--t3);transition:transform .25s}
+.fa-item.open .fa-chev{transform:rotate(180deg)}
+.fa-body{display:none;padding:0 16px 16px;font-size:13px;color:var(--t2);line-height:1.75}
+.fa-item.open .fa-body{display:block;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.fa-body ol{padding-left:18px}
+.fa-body li{margin-bottom:5px}
+.fa-warn{
+  margin-top:10px;padding:9px 12px;border-radius:var(--rs);
+  background:rgba(255,197,66,.08);border-left:3px solid var(--yellow);
+  color:var(--yellow);font-size:12px;line-height:1.5}
+
+/* ── REPORT ── */
+#report-sec .card{background:linear-gradient(135deg,#130a0a,var(--card));border-color:rgba(232,25,44,.12)}
+.rpt-form{display:flex;flex-direction:column;gap:13px}
+.fg{display:flex;flex-direction:column;gap:6px}
+.fl{font-size:11px;font-weight:700;color:var(--t2);letter-spacing:.5px;text-transform:uppercase}
+.fc{
+  padding:11px 14px;border-radius:var(--rs);background:var(--bg3);border:1px solid var(--b);
+  color:var(--t);font-size:13px;transition:all .2s}
+.fc:focus{border-color:rgba(232,25,44,.45);outline:none;box-shadow:0 0 0 3px rgba(232,25,44,.07)}
+.fc::placeholder{color:var(--t3)}
+textarea.fc{resize:vertical;min-height:82px}
+select.fc{appearance:none}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sub-btn{
+  padding:14px;border-radius:var(--r);font-size:14px;font-weight:800;
+  background:linear-gradient(135deg,var(--red),var(--red-d));color:#fff;
+  letter-spacing:.5px;transition:all .2s;box-shadow:0 6px 20px rgba(232,25,44,.3)}
+.sub-btn:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(232,25,44,.4)}
+.sub-btn:active{transform:translateY(0)}
+
+/* ── MODAL ── */
+.modal-overlay{
+  display:none;position:fixed;inset:0;z-index:2000;
+  background:rgba(0,0,0,.82);backdrop-filter:blur(14px);
+  align-items:flex-end;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{
+  background:var(--bg2);border:1px solid var(--b);border-top:1px solid rgba(232,25,44,.2);
+  border-radius:var(--rxl) var(--rxl) 0 0;width:100%;max-width:640px;max-height:92vh;
+  overflow-y:auto;padding:22px;animation:slideUp .35s cubic-bezier(.16,1,.3,1);
+  scrollbar-width:thin;scrollbar-color:var(--b) transparent}
+@keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.modal-title{font-size:17px;font-weight:800}
+.close-btn{
+  width:30px;height:30px;border-radius:50%;background:var(--bg3);color:var(--t2);
+  font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.close-btn:hover{background:var(--bg4);color:var(--t)}
+
+/* ── ALERT POPUP ── */
+#alert-popup{
+  position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-20px);
+  z-index:3000;background:var(--bg2);border:1px solid var(--br);
+  border-radius:var(--r);padding:14px 20px;min-width:280px;max-width:340px;
+  box-shadow:0 8px 40px rgba(232,25,44,.3);opacity:0;transition:all .35s;pointer-events:none}
+#alert-popup.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+.alert-inner{display:flex;align-items:center;gap:12px}
+.alert-icon{font-size:24px;flex-shrink:0}
+.alert-text{font-size:13px;font-weight:600;line-height:1.4}
+.alert-sub{font-size:11px;color:var(--t2);margin-top:2px}
+
+/* ── TOAST ── */
+#toast{
+  position:fixed;bottom:82px;left:50%;transform:translateX(-50%) translateY(16px);
+  background:var(--bg3);border:1px solid var(--b);color:var(--t);
+  padding:10px 22px;border-radius:var(--rf);font-size:13px;font-weight:500;
+  z-index:3000;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;box-shadow:var(--sh)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.success{border-color:rgba(0,214,143,.4);color:var(--green)}
+#toast.error{border-color:rgba(232,25,44,.4);color:var(--red-l)}
+#toast.info{border-color:rgba(62,207,255,.4);color:var(--blue)}
+
+/* ── BOTTOM NAV ── */
+#bnav{
+  position:fixed;bottom:0;left:0;right:0;z-index:900;
+  background:rgba(7,9,15,.97);backdrop-filter:blur(20px);
+  border-top:1px solid var(--b);
+  display:flex;justify-content:space-around;padding:8px 0 14px}
+.nav-item{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:4px 12px;border-radius:var(--rs);transition:all .2s;
+  font-size:10px;color:var(--t3);background:none;border:none;letter-spacing:.3px}
+.nav-item .ni{font-size:22px}
+.nav-item.active{color:var(--red)}
+.nav-item:hover{color:var(--t2)}
+
+/* ── FOOTER ── */
+footer{padding:20px 16px 92px;text-align:center;border-top:1px solid var(--b);margin-top:8px}
+.ft-brand{font-size:13px;font-weight:700;color:var(--t2);margin-bottom:8px}
+.ft-disc{font-size:11px;color:var(--t3);line-height:1.7;max-width:500px;margin:0 auto}
+.ft-disc strong{color:var(--red-l)}
+
+/* ── MISC ── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:var(--rf);font-size:10px;font-weight:700}
+.badge.green{background:var(--bg-g);color:var(--green);border:1px solid rgba(0,214,143,.25)}
+.badge.orange{background:rgba(255,124,42,.1);color:var(--orange);border:1px solid rgba(255,124,42,.25)}
+.badge.red{background:rgba(232,25,44,.1);color:var(--red-l);border:1px solid var(--br)}
+.text-red{color:var(--red-l)}
+.text-green{color:var(--green)}
+.text-blue{color:var(--blue)}
+
+/* ── LEAFLET OVERRIDES ── */
+.leaflet-container{background:#0c1220;font-family:var(--font)}
+.leaflet-tile{filter:brightness(.85) saturate(.7) hue-rotate(180deg) invert(1) hue-rotate(180deg)}
+.leaflet-popup-content-wrapper{background:var(--bg2);border:1px solid var(--b);border-radius:var(--rs);color:var(--t);box-shadow:var(--sh)}
+.leaflet-popup-tip{background:var(--bg2)}
+.leaflet-popup-content{font-family:var(--font);font-size:12px;margin:10px 14px}
+.leaflet-control-zoom a{background:var(--bg3);color:var(--t2);border-color:var(--b)}
+.leaflet-control-zoom a:hover{background:var(--bg4);color:var(--t)}
+
+@media(max-width:360px){
+  .contacts-grid{grid-template-columns:1fr}
+  .toolkit-grid{grid-template-columns:1fr}
+  .countries-grid{grid-template-columns:repeat(2,1fr)}
+  .fr2{grid-template-columns:1fr}}
+</style>
+<body>
+
+<!-- STATUS BAR -->
+<div id="status-bar">
+  <div class="si"><div class="sd" id="gps-dot"></div><span id="gps-status">GPS Off</span></div>
+  <div class="si"><div class="sd" id="net-dot"></div><span id="net-status">Checking…</span></div>
+  <div class="si"><span style="color:var(--red-l);font-weight:800;letter-spacing:1px">🚨 ROADSOS</span></div>
+  <div class="si"><span id="time-display" style="font-family:var(--mono);font-size:11px"></span></div>
+</div>
+
+<!-- OFFLINE BANNER -->
+<div id="offline-banner">⚠️ OFFLINE MODE ACTIVE — Emergency data loaded from cache</div>
+
+<!-- ALERT POPUP -->
+<div id="alert-popup">
+  <div class="alert-inner">
+    <div class="alert-icon" id="alert-icon">🚨</div>
+    <div><div class="alert-text" id="alert-text"></div><div class="alert-sub" id="alert-sub"></div></div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🚨</div>
+    <div>
+      <div class="logo-text">ROAD<span>SOS</span></div>
+      <div class="logo-sub">Emergency Assistance</div>
+    </div>
+  </div>
+  <div class="hdr-btns">
+    <button class="ibtn" onclick="scrollToSection('voice-sec')" title="Voice Assistant">🎙️</button>
+    <button class="ibtn" onclick="scrollToSection('report-sec')" title="Report Incident">📋</button>
+    <button class="ibtn" onclick="toggleTheme()" id="theme-btn" title="Toggle Theme">🌙</button>
+  </div>
+</header>
+
+<main>
+
+<!-- SOS HERO -->
+<section id="sos-sec">
+  <div class="sos-badge">🚨 Emergency Response System</div>
+  <div class="sos-h1">Road Accident Assistance</div>
+  <div class="sos-sub">Tap SOS to activate emergency mode instantly</div>
+  <button id="sos-btn" onclick="activateSOS()">
+    <span class="sos-icon">🆘</span>
+    <span>SOS</span>
+  </button>
+  <div class="sos-actions">
+    <button class="sab r" onclick="callNumber('112')">📞 Call 112</button>
+    <button class="sab o" onclick="callNumber('108')">🚑 Ambulance 108</button>
+    <button class="sab b" onclick="shareLocation()">📍 Share Location</button>
+    <button class="sab g" onclick="scrollToSection('map-sec')">🗺️ Live Map</button>
+  </div>
+</section>
+
+<!-- LOCATION -->
+<div class="sec">
+  <div class="sec-title">📍 Current Location</div>
+  <div class="card" id="loc-card">
+    <div class="loc-hdr">
+      <div>
+        <div class="loc-addr" id="loc-address">Fetching location…</div>
+        <div class="loc-det" id="loc-detail">Enable GPS for accurate results</div>
+        <div class="loc-coords" id="loc-coords">—</div>
+      </div>
+      <button class="ref-btn" onclick="getLocation()">🔄 Refresh</button>
+    </div>
+    <div class="loc-acc" id="loc-accuracy" style="display:none">
+      ✅ GPS Active — <span id="loc-acc-val"></span> accuracy
+    </div>
+  </div>
+</div>
+
+<!-- LIVE MAP -->
+<div class="sec" id="map-sec">
+  <div class="sec-title">🗺️ Live Emergency Map</div>
+  <div id="map-container">
+    <div id="emergency-map"></div>
+    <div class="map-overlay">
+      <button class="map-btn" onclick="centerMap()" title="My Location">📍</button>
+      <button class="map-btn" onclick="toggleMapLayer()" title="Toggle Layer">🗺️</button>
+    </div>
+    <div class="map-legend">
+      <div class="map-legend-item"><div class="map-dot" style="background:#e8192c"></div>Hospital</div>
+      <div class="map-legend-item"><div class="map-dot" style="background:#ff7c2a"></div>Ambulance</div>
+      <div class="map-legend-item"><div class="map-dot" style="background:#3ecfff"></div>Police</div>
+      <div class="map-legend-item"><div class="map-dot" style="background:#ffc542"></div>Towing</div>
+    </div>
+  </div>
+</div>
+
+<!-- SERVICES -->
+<div class="sec">
+  <div class="sec-title">🏥 Nearby Emergency Services</div>
+  <div class="srch-bar">
+    <input type="text" class="srch-inp" id="service-search"
+      placeholder="🔍 Search hospitals, police, towing…" oninput="filterServices()"/>
+  </div>
+  <div class="cat-tabs" id="category-tabs">
+    <button class="cat-tab active" data-cat="all" onclick="selectCategory('all',this)">All</button>
+    <button class="cat-tab" data-cat="hospital" onclick="selectCategory('hospital',this)">🏥 Hospital</button>
+    <button class="cat-tab" data-cat="ambulance" onclick="selectCategory('ambulance',this)">🚑 Ambulance</button>
+    <button class="cat-tab" data-cat="police" onclick="selectCategory('police',this)">👮 Police</button>
+    <button class="cat-tab" data-cat="towing" onclick="selectCategory('towing',this)">🚗 Towing</button>
+    <button class="cat-tab" data-cat="puncture" onclick="selectCategory('puncture',this)">🔧 Puncture</button>
+    <button class="cat-tab" data-cat="trauma" onclick="selectCategory('trauma',this)">🩺 Trauma</button>
+  </div>
+  <div class="svc-list" id="service-list"></div>
+</div>
+
+<!-- CONTACTS -->
+<div class="sec" id="contacts-section">
+  <div class="sec-title">📞 Emergency Contacts</div>
+  <div class="contacts-grid" id="contacts-grid"></div>
+  <div class="add-form">
+    <h4>➕ Add Personal Emergency Contact</h4>
+    <div class="form-row">
+      <input type="text" class="fi" id="contact-name" placeholder="Name (e.g. Mom)"/>
+      <input type="tel" class="fi" id="contact-number" placeholder="Phone number"/>
+    </div>
+    <button class="save-btn" onclick="savePersonalContact()">💾 Save Contact</button>
+  </div>
+  <div id="personal-contacts" style="margin-top:12px"></div>
+</div>
+
+<!-- INTERNATIONAL -->
+<div class="sec" id="intl-section">
+  <div class="sec-title">🌍 International Emergency Numbers</div>
+  <div class="countries-grid" id="countries-grid"></div>
+</div>
+
+<!-- OFFLINE TOOLKIT -->
+<div class="sec" id="offline-section">
+  <div class="sec-title">📴 Offline Emergency Toolkit</div>
+  <div class="card" style="margin-bottom:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:14px;font-weight:700">Offline Mode</div>
+        <div style="font-size:12px;color:var(--t2);margin-top:2px">All critical data cached locally</div>
+      </div>
+      <div class="badge green" id="cache-badge">✅ Cached</div>
+    </div>
+    <div class="divider"></div>
+    <div class="toolkit-grid">
+      <div class="tk-item" onclick="showOfflineContacts()">
+        <div class="tk-icon">📞</div><div class="tk-title">SOS Numbers</div><div class="tk-desc">All emergency numbers</div>
+      </div>
+      <div class="tk-item" onclick="showFirstAidQuick()">
+        <div class="tk-icon">🩹</div><div class="tk-title">First Aid</div><div class="tk-desc">Quick reference guide</div>
+      </div>
+      <div class="tk-item" onclick="showLastLocation()">
+        <div class="tk-icon">📍</div><div class="tk-title">Last Location</div><div class="tk-desc">Cached GPS coordinates</div>
+      </div>
+      <div class="tk-item" onclick="showOfflineServices()">
+        <div class="tk-icon">🏥</div><div class="tk-title">Saved Services</div><div class="tk-desc">Nearby services list</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VOICE -->
+<div class="sec" id="voice-sec">
+  <div class="sec-title">🎙️ Voice Assistant</div>
+  <div class="card">
+    <div class="voice-hdr">
+      <div class="voice-orb" id="voice-orb">🎙️</div>
+      <div><div class="voice-title">ROADSOS Voice</div><div class="voice-sub">Hands-free emergency commands</div></div>
+    </div>
+    <button id="voice-btn" onclick="toggleVoice()">🎙️ Tap to Speak</button>
+    <div class="vcmds">
+      <span class="vcmd" onclick="runVoiceCmd('send sos')">"Send SOS"</span>
+      <span class="vcmd" onclick="runVoiceCmd('find hospital')">"Find hospital"</span>
+      <span class="vcmd" onclick="runVoiceCmd('call police')">"Call police"</span>
+      <span class="vcmd" onclick="runVoiceCmd('call ambulance')">"Call ambulance"</span>
+      <span class="vcmd" onclick="runVoiceCmd('my location')">"My location"</span>
+      <span class="vcmd" onclick="runVoiceCmd('show towing')">"Show towing"</span>
+      <span class="vcmd" onclick="runVoiceCmd('first aid')">"First aid"</span>
+    </div>
+    <div id="voice-out"></div>
+  </div>
+</div>
+
+<!-- FIRST AID -->
+<div class="sec" id="firstaid-section">
+  <div class="sec-title">🩹 First Aid Quick Guide</div>
+  <div class="fa-list" id="firstaid-list"></div>
+</div>
+
+<!-- REPORT -->
+<div class="sec" id="report-sec">
+  <div class="sec-title">📋 Report Incident</div>
+  <div class="card">
+    <div style="font-size:15px;font-weight:800;margin-bottom:4px">🚨 Accident Report Form</div>
+    <div style="font-size:12px;color:var(--t2);margin-bottom:18px">Report will be shared with nearest emergency services</div>
+    <form class="rpt-form" onsubmit="submitReport(event)">
+      <div class="fr2">
+        <div class="fg">
+          <label class="fl">Accident Type</label>
+          <select class="fc" id="acc-type">
+            <option value="">Select type</option>
+            <option>Vehicle Collision</option><option>Single Vehicle Crash</option>
+            <option>Pedestrian Hit</option><option>Two-Wheeler Accident</option>
+            <option>Truck/Bus Accident</option><option>Hit and Run</option><option>Other</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fl">Severity</label>
+          <select class="fc" id="acc-severity">
+            <option value="">Select</option>
+            <option>Minor — No injuries</option><option>Moderate — Minor injuries</option>
+            <option>Serious — Major injuries</option><option>Critical — Life threatening</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">Location / Landmark</label>
+        <input type="text" class="fc" id="acc-location" placeholder="e.g. Near Rajiv Chowk, NH-48, Delhi"/>
+      </div>
+      <div class="fg">
+        <label class="fl">Number of People Involved</label>
+        <input type="number" class="fc" id="acc-people" placeholder="e.g. 3" min="1"/>
+      </div>
+      <div class="fg">
+        <label class="fl">Description</label>
+        <textarea class="fc" id="acc-desc" placeholder="Briefly describe what happened…"></textarea>
+      </div>
+      <div class="fg">
+        <label class="fl">Your Contact Number (optional)</label>
+        <input type="tel" class="fc" id="acc-contact" placeholder="+91 XXXXX XXXXX"/>
+      </div>
+      <button type="submit" class="sub-btn">🚨 Submit Emergency Report</button>
+    </form>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  <div class="ft-brand">🚨 ROADSOS — Road Accident Emergency Assistance</div>
+  <div class="ft-disc">
+    <strong>⚠️ DISCLAIMER:</strong> This app provides emergency assistance information only.
+    Always call official emergency services (112) first.
+    ROADSOS is not a substitute for professional medical or law enforcement response.
+    In life-threatening situations, call <strong>112</strong> immediately.
+  </div>
+</footer>
+
+<nav id="bnav">
+  <button class="nav-item active" onclick="scrollToSection('sos-sec')"><span class="ni">🆘</span><span>SOS</span></button>
+  <button class="nav-item" onclick="scrollToSection('map-sec')"><span class="ni">🗺️</span><span>Map</span></button>
+  <button class="nav-item" onclick="scrollToSection('contacts-section')"><span class="ni">📞</span><span>Contacts</span></button>
+  <button class="nav-item" onclick="scrollToSection('firstaid-section')"><span class="ni">🩹</span><span>First Aid</span></button>
+  <button class="nav-item" onclick="scrollToSection('report-sec')"><span class="ni">📋</span><span>Report</span></button>
+</nav>
+
+<!-- SOS MODAL -->
+<div class="modal-overlay" id="sos-modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title text-red">🚨 SOS ACTIVATED</div>
+      <button class="close-btn" onclick="closeModal('sos-modal')">✕</button>
+    </div>
+    <div id="sos-modal-content"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ============================================================
+   ROADSOS — Full Application Logic
+   Firebase Firestore + Leaflet Map + Web Speech API
+============================================================ */
+
+// ── STATIC DATA ──────────────────────────────────────────────
+const SERVICES = [
+  // HOSPITALS
+  {id:1,cat:'hospital',name:'AIIMS Trauma Centre',lat:28.5672,lng:77.2100,phone:'011-26588500',alt:'112',status:'open',area:'Ansari Nagar, Delhi',icon:'🏥',rating:4.8,extraInfo:'Level 1 Trauma, 24x7'},
+  {id:2,cat:'hospital',name:'Safdarjung Hospital',lat:28.5706,lng:77.2040,phone:'011-26707444',alt:'108',status:'open',area:'Ring Road, Delhi',icon:'🏥',rating:4.5,extraInfo:'Govt, Free OPD'},
+  {id:3,cat:'hospital',name:'Apollo Hospital',lat:28.5355,lng:77.2910,phone:'1860-500-1066',alt:'112',status:'open',area:'Sarita Vihar, Delhi',icon:'🏥',rating:4.7,extraInfo:'Private, 24x7'},
+  {id:4,cat:'hospital',name:'Max Super Speciality',lat:28.5244,lng:77.2066,phone:'011-26515050',alt:'108',status:'busy',area:'Saket, Delhi',icon:'🏥',rating:4.6,extraInfo:'ICU Available'},
+  {id:5,cat:'hospital',name:'Fortis Hospital',lat:28.5200,lng:77.1580,phone:'1800-111-4567',alt:'112',status:'open',area:'Vasant Kunj, Delhi',icon:'🏥',rating:4.5,extraInfo:'Trauma Unit'},
+  {id:6,cat:'hospital',name:'RML Hospital',lat:28.6328,lng:77.2197,phone:'011-23404000',alt:'108',status:'open',area:'Connaught Place, Delhi',icon:'🏥',rating:4.3,extraInfo:'Govt, Central Delhi'},
+  {id:7,cat:'hospital',name:'GTB Hospital',lat:28.6692,lng:77.3050,phone:'011-22582525',alt:'108',status:'open',area:'Shahdara, Delhi',icon:'🏥',rating:4.2,extraInfo:'Govt, East Delhi'},
+  {id:8,cat:'hospital',name:'Medanta Hospital',lat:28.4595,lng:77.0266,phone:'0124-4141414',alt:'108',status:'open',area:'Sector 38, Gurugram',icon:'🏥',rating:4.8,extraInfo:'World Class'},
+  // AMBULANCE
+  {id:9,cat:'ambulance',name:'National Ambulance 108',lat:28.6139,lng:77.2090,phone:'108',alt:'112',status:'open',area:'Nationwide',icon:'🚑',rating:4.4,extraInfo:'Free Govt Service'},
+  {id:10,cat:'ambulance',name:'Ziqitza Ambulance',lat:28.6200,lng:77.2150,phone:'1800-419-1919',alt:'108',status:'open',area:'Delhi NCR',icon:'🚑',rating:4.6,extraInfo:'ALS/BLS Available'},
+  {id:11,cat:'ambulance',name:'StanPlus Ambulance',lat:28.5355,lng:77.2910,phone:'1800-313-1414',alt:'112',status:'open',area:'Delhi NCR',icon:'🚑',rating:4.7,extraInfo:'15-min response'},
+  {id:12,cat:'ambulance',name:'GVK EMRI Ambulance',lat:28.6692,lng:77.3050,phone:'108',alt:'112',status:'busy',area:'Delhi NCR',icon:'🚑',rating:4.3,extraInfo:'Govt, Free'},
+  {id:13,cat:'ambulance',name:'Medanta Ambulance',lat:28.4595,lng:77.0266,phone:'0124-4141414',alt:'108',status:'open',area:'Gurugram',icon:'🚑',rating:4.8,extraInfo:'ICU on wheels'},
+  // POLICE
+  {id:14,cat:'police',name:'Delhi Traffic Police',lat:28.6139,lng:77.2090,phone:'1095',alt:'100',status:'open',area:'All Delhi',icon:'👮',rating:4.2,extraInfo:'Traffic Control'},
+  {id:15,cat:'police',name:'Connaught Place PS',lat:28.6328,lng:77.2197,phone:'011-23341151',alt:'100',status:'open',area:'CP, Delhi',icon:'👮',rating:4.1,extraInfo:'Central Delhi'},
+  {id:16,cat:'police',name:'Saket Police Station',lat:28.5244,lng:77.2066,phone:'011-29563100',alt:'100',status:'open',area:'Saket, Delhi',icon:'👮',rating:4.0,extraInfo:'South Delhi'},
+  {id:17,cat:'police',name:'Highway Patrol NH-48',lat:28.4595,lng:77.0266,phone:'1033',alt:'100',status:'open',area:'NH-48, Gurugram',icon:'👮',rating:4.3,extraInfo:'Highway Patrol'},
+  {id:18,cat:'police',name:'PCR Van Control Room',lat:28.6139,lng:77.2090,phone:'100',alt:'112',status:'open',area:'Delhi',icon:'👮',rating:4.5,extraInfo:'24x7 PCR'},
+  // TOWING
+  {id:19,cat:'towing',name:'Delhi Towing Services',lat:28.6139,lng:77.2090,phone:'9810012345',alt:'',status:'open',area:'Delhi NCR',icon:'🚗',rating:4.2,extraInfo:'24x7, All vehicles'},
+  {id:20,cat:'towing',name:'Rapid Tow & Recovery',lat:28.5244,lng:77.2066,phone:'9899123456',alt:'',status:'open',area:'South Delhi',icon:'🚗',rating:4.4,extraInfo:'Heavy vehicles'},
+  {id:21,cat:'towing',name:'NH Towing Services',lat:28.4595,lng:77.0266,phone:'9711234567',alt:'',status:'busy',area:'NH-48, Gurugram',icon:'🚗',rating:4.1,extraInfo:'Highway specialist'},
+  {id:22,cat:'towing',name:'QuickTow Delhi',lat:28.6692,lng:77.1050,phone:'9871234567',alt:'',status:'open',area:'West Delhi',icon:'🚗',rating:4.3,extraInfo:'24x7, Flatbed'},
+  {id:23,cat:'towing',name:'AAI Road Assist',lat:28.6139,lng:77.2090,phone:'1800-200-1111',alt:'',status:'open',area:'Delhi NCR',icon:'🚗',rating:4.5,extraInfo:'Insurance tie-up'},
+  // PUNCTURE
+  {id:24,cat:'puncture',name:'Sharma Tyre Works',lat:28.5672,lng:77.2430,phone:'9810098765',alt:'',status:'open',area:'Lajpat Nagar',icon:'🔧',rating:4.0,extraInfo:'All tyre brands'},
+  {id:25,cat:'puncture',name:'24x7 Tyre Repair',lat:28.5244,lng:77.2066,phone:'9899876543',alt:'',status:'open',area:'Saket',icon:'🔧',rating:4.2,extraInfo:'Mobile service'},
+  {id:26,cat:'puncture',name:'MRF Tyre Service',lat:28.5200,lng:77.1580,phone:'1800-419-0909',alt:'',status:'open',area:'Vasant Kunj',icon:'🔧',rating:4.4,extraInfo:'Authorised MRF'},
+  // TRAUMA
+  {id:27,cat:'trauma',name:'AIIMS Trauma Centre',lat:28.5672,lng:77.2100,phone:'011-26588700',alt:'112',status:'open',area:'Ansari Nagar',icon:'🩺',rating:4.9,extraInfo:'Level 1 Trauma'},
+  {id:28,cat:'trauma',name:'GTB Hospital Trauma',lat:28.6692,lng:77.3050,phone:'011-22582525',alt:'108',status:'open',area:'Shahdara, Delhi',icon:'🩺',rating:4.4,extraInfo:'Level 2 Trauma'},
+  {id:29,cat:'trauma',name:'Safdarjung Trauma',lat:28.5706,lng:77.2040,phone:'011-26707000',alt:'108',status:'busy',area:'Ring Road',icon:'🩺',rating:4.6,extraInfo:'Level 1 Trauma'},
+  {id:30,cat:'trauma',name:'Medanta Trauma',lat:28.4595,lng:77.0266,phone:'0124-4141414',alt:'108',status:'open',area:'Gurugram',icon:'🩺',rating:4.8,extraInfo:'Level 1 Trauma'},
+];
+
+const EMERGENCY_CONTACTS = [
+  {name:'National Emergency',number:'112',icon:'🆘'},{name:'Ambulance',number:'108',icon:'🚑'},
+  {name:'Police',number:'100',icon:'👮'},{name:'Fire Brigade',number:'101',icon:'🔥'},
+  {name:'Traffic Police',number:'1095',icon:'🚦'},{name:'Highway Helpline',number:'1033',icon:'🛣️'},
+  {name:'Women Helpline',number:'1091',icon:'👩'},{name:'Child Helpline',number:'1098',icon:'👶'},
+  {name:'Disaster Mgmt',number:'1078',icon:'⚠️'},{name:'Blood Bank',number:'1910',icon:'🩸'},
+];
+
+const COUNTRIES = [
+  {flag:'🇮🇳',name:'India',number:'112',type:'All Emergency'},{flag:'🇺🇸',name:'USA',number:'911',type:'All Emergency'},
+  {flag:'🇬🇧',name:'UK',number:'999',type:'All Emergency'},{flag:'🇦🇺',name:'Australia',number:'000',type:'All Emergency'},
+  {flag:'🇨🇦',name:'Canada',number:'911',type:'All Emergency'},{flag:'🇩🇪',name:'Germany',number:'112',type:'All Emergency'},
+  {flag:'🇫🇷',name:'France',number:'15/17',type:'Medical/Police'},{flag:'🇯🇵',name:'Japan',number:'119',type:'Ambulance'},
+  {flag:'🇨🇳',name:'China',number:'120',type:'Ambulance'},{flag:'🇧🇷',name:'Brazil',number:'192',type:'Ambulance'},
+  {flag:'🇿🇦',name:'S.Africa',number:'10177',type:'Ambulance'},{flag:'🇦🇪',name:'UAE',number:'998',type:'Ambulance'},
+  {flag:'🇸🇬',name:'Singapore',number:'995',type:'Ambulance'},{flag:'🇳🇿',name:'New Zealand',number:'111',type:'All Emergency'},
+  {flag:'🇮🇹',name:'Italy',number:'118',type:'Ambulance'},{flag:'🇪🇸',name:'Spain',number:'112',type:'All Emergency'},
+  {flag:'🇷🇺',name:'Russia',number:'103',type:'Ambulance'},{flag:'🇲🇾',name:'Malaysia',number:'999',type:'All Emergency'},
+];
+
+const FIRST_AID = [
+  {icon:'🩸',title:'Controlling Bleeding',steps:['Apply firm, direct pressure with a clean cloth or bandage','Do NOT remove the cloth — add more on top if soaked','Elevate the injured limb above heart level if possible','Maintain pressure for at least 10–15 minutes','For severe limb bleeding, apply tourniquet 2–3 inches above wound'],warning:'Do NOT apply tourniquet on neck, chest, or abdomen'},
+  {icon:'🫁',title:'CPR (Cardiopulmonary Resuscitation)',steps:['Check scene safety, then check victim responsiveness','Call 112 or ask someone to call immediately','Tilt head back, lift chin, check for breathing (10 seconds)','Give 30 chest compressions — hard and fast (100–120/min)','Give 2 rescue breaths (if trained)','Continue 30:2 cycle until help arrives'],warning:'Only give rescue breaths if trained. Hands-only CPR is effective'},
+  {icon:'🦴',title:'Suspected Spinal Injury',steps:['DO NOT move the victim unless in immediate danger','Keep head, neck, and spine aligned at all times','If must move, use log-roll technique with multiple helpers','Support head and neck manually until EMS arrives','Keep victim warm and calm'],warning:'Moving a spinal injury victim incorrectly can cause permanent paralysis'},
+  {icon:'🔥',title:'Burns from Accident',steps:['Remove victim from heat source safely','Cool burn with cool (not cold/ice) running water for 20 minutes','Remove jewellery/clothing near burn (if not stuck)','Cover loosely with clean non-fluffy material','Do NOT apply butter, toothpaste, or ice'],warning:'Do NOT burst blisters. Seek medical help for burns larger than palm size'},
+  {icon:'😵',title:'Unconscious Victim',steps:['Check for response — tap shoulders, shout','Call 112 immediately','Open airway — tilt head, lift chin','Check breathing for 10 seconds','If breathing: place in recovery position (on side)','If not breathing: start CPR'],warning:'Never give food or water to an unconscious person'},
+  {icon:'🦵',title:'Fractures & Broken Bones',steps:['Immobilise the injured area — do not try to straighten','Support above and below the fracture site','Apply improvised splint (stick, rolled newspaper)','Apply ice pack wrapped in cloth to reduce swelling','Elevate if possible and keep victim still'],warning:'Open fractures (bone visible) are medical emergencies — call 108 immediately'},
+];
+
+// ── STATE ────────────────────────────────────────────────────
+let currentCategory = 'all';
+let currentLocation = null;
+let isOnline = navigator.onLine;
+let voiceActive = false;
+let recognition = null;
+let personalContacts = JSON.parse(localStorage.getItem('roadsos_contacts') || '[]');
+let map = null;
+let userMarker = null;
+let serviceMarkers = [];
+
+// ── API ───────────────────────────────────────────────────────
+const API_BASE = location.protocol !== 'file:' ? '/api' : 'http://localhost:3001/api';
+const DEVICE_ID = (() => {
+  let id = localStorage.getItem('roadsos_device_id');
+  if (!id) { id = 'dev_' + Math.random().toString(36).slice(2, 11); localStorage.setItem('roadsos_device_id', id); }
+  return id;
+})();
+
+async function apiFetch(path, options = {}) {
+  try {
+    const res = await fetch(API_BASE + path, {
+      headers: { 'Content-Type': 'application/json', ...options.headers },
+      ...options,
+      body: options.body ? JSON.stringify(options.body) : undefined,
+    });
+    const json = await res.json();
+    return { ok: res.ok, status: res.status, data: json };
+  } catch (err) {
+    return { ok: false, status: 0, data: null };
+  }
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  updateClock();
+  setInterval(updateClock, 1000);
+  checkNetwork();
+  initMap();
+  renderContacts();
+  renderCountries();
+  renderFirstAid();
+  renderServices('', 'all');
+  loadPersonalContacts();
+  cacheData();
+  initVoice();
+  getLocation();
+
+  // Try to load from API in background
+  loadFromAPI();
+
+  window.addEventListener('online',  () => { isOnline = true;  checkNetwork(); loadFromAPI(); });
+  window.addEventListener('offline', () => { isOnline = false; checkNetwork(); });
+});
+
+async function loadFromAPI() {
+  const [svcRes, ctcRes, intlRes, faRes] = await Promise.all([
+    apiFetch('/services?limit=100'),
+    apiFetch('/contacts'),
+    apiFetch('/contacts/international'),
+    apiFetch('/firstaid'),
+  ]);
+  if (svcRes.ok && svcRes.data.data?.length) {
+    localStorage.setItem('roadsos_services_cache', JSON.stringify(svcRes.data.data));
+  }
+  if (ctcRes.ok && ctcRes.data.data?.length) renderContactCards(ctcRes.data.data);
+  if (intlRes.ok && intlRes.data.data?.length) renderCountryCards(intlRes.data.data);
+  if (faRes.ok && faRes.data.data?.length) renderFirstAidCards(faRes.data.data);
+}
+
+// ── CLOCK ─────────────────────────────────────────────────────
+function updateClock() {
+  document.getElementById('time-display').textContent =
+    new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ── NETWORK ───────────────────────────────────────────────────
+function checkNetwork() {
+  const dot = document.getElementById('net-dot');
+  const txt = document.getElementById('net-status');
+  const banner = document.getElementById('offline-banner');
+  if (isOnline) {
+    dot.className = 'sd on'; txt.textContent = 'Online';
+    banner.classList.remove('show');
+  } else {
+    dot.className = 'sd err'; txt.textContent = 'Offline';
+    banner.classList.add('show');
+    showAlert('📴', 'Offline Mode Active', 'Emergency data loaded from cache');
+  }
+}
+
+// ── GEOLOCATION ───────────────────────────────────────────────
+function getLocation() {
+  const gpsDot = document.getElementById('gps-dot');
+  const gpsStatus = document.getElementById('gps-status');
+  gpsDot.className = 'sd warn'; gpsStatus.textContent = 'Locating…';
+  document.getElementById('loc-address').textContent = 'Fetching location…';
+
+  if (!navigator.geolocation) {
+    gpsDot.className = 'sd err'; gpsStatus.textContent = 'GPS N/A';
+    document.getElementById('loc-address').textContent = 'GPS not supported';
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+      currentLocation = { lat, lng, acc: accuracy };
+      gpsDot.className = 'sd on'; gpsStatus.textContent = 'GPS Active';
+      document.getElementById('loc-coords').textContent = `${lat.toFixed(5)}°N, ${lng.toFixed(5)}°E`;
+      document.getElementById('loc-accuracy').style.display = 'flex';
+      document.getElementById('loc-acc-val').textContent = `±${Math.round(accuracy)}m`;
+
+      // Reverse geocode
+      const geo = await apiFetch('/location/reverse', { method: 'POST', body: { lat, lng } });
+      const address = geo.ok ? geo.data.data.address : `${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`;
+      document.getElementById('loc-address').textContent = address;
+      document.getElementById('loc-detail').textContent = geo.ok
+        ? `${geo.data.data.city}, ${geo.data.data.state}` : 'Location acquired';
+
+      localStorage.setItem('roadsos_last_location', JSON.stringify({ lat, lng, address, time: new Date().toISOString() }));
+      apiFetch('/location/cache', { method: 'POST', body: { device_id: DEVICE_ID, lat, lng, address, accuracy } });
+
+      // Update map and services
+      updateMapLocation(lat, lng);
+      renderServices(document.getElementById('service-search').value, currentCategory);
+      showToast('📍 Location updated', 'success');
+    },
+    () => {
+      gpsDot.className = 'sd err'; gpsStatus.textContent = 'GPS Error';
+      const cached = localStorage.getItem('roadsos_last_location');
+      if (cached) {
+        const loc = JSON.parse(cached);
+        document.getElementById('loc-address').textContent = loc.address + ' (cached)';
+        document.getElementById('loc-detail').textContent = 'Last known location';
+        document.getElementById('loc-coords').textContent = `${loc.lat.toFixed(5)}°N, ${loc.lng.toFixed(5)}°E`;
+        currentLocation = { lat: loc.lat, lng: loc.lng, acc: null };
+        updateMapLocation(loc.lat, loc.lng);
+      } else {
+        document.getElementById('loc-address').textContent = 'Location unavailable';
+        document.getElementById('loc-detail').textContent = 'Please enable GPS';
+      }
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+  );
+}
+
+// ── HAVERSINE DISTANCE ────────────────────────────────────────
+function haversine(lat1, lng1, lat2, lng2) {
+  if (!lat1 || !lng1 || !lat2 || !lng2) return 9999;
+  const R = 6371, toRad = d => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1), dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
+  return +(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))).toFixed(2);
+}
+
+// ── MAP ───────────────────────────────────────────────────────
+function initMap() {
+  // Default center: Delhi
+  const defaultLat = 28.6139, defaultLng = 77.2090;
+  map = L.map('emergency-map', { zoomControl: true, attributionControl: false }).setView([defaultLat, defaultLng], 12);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18, attribution: '© OpenStreetMap'
+  }).addTo(map);
+
+  // Add service markers
+  addServiceMarkers();
+}
+
+function getCatColor(cat) {
+  return { hospital: '#e8192c', ambulance: '#ff7c2a', police: '#3ecfff', towing: '#ffc542', puncture: '#00d68f', trauma: '#e8192c' }[cat] || '#888';
+}
+
+function addServiceMarkers() {
+  serviceMarkers.forEach(m => map.removeLayer(m));
+  serviceMarkers = [];
+
+  SERVICES.forEach(s => {
+    if (!s.lat || !s.lng) return;
+    const color = getCatColor(s.cat);
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="width:28px;height:28px;border-radius:50%;background:${color};border:2px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.5)">${s.icon}</div>`,
+      iconSize: [28, 28], iconAnchor: [14, 14]
+    });
+    const marker = L.marker([s.lat, s.lng], { icon })
+      .addTo(map)
+      .bindPopup(`<strong>${s.name}</strong><br>${s.area}<br>📞 ${s.phone}<br><span style="color:${color}">${s.status.toUpperCase()}</span>`);
+    serviceMarkers.push(marker);
+  });
+}
+
+function updateMapLocation(lat, lng) {
+  if (!map) return;
+  map.setView([lat, lng], 13);
+
+  if (userMarker) map.removeLayer(userMarker);
+  const icon = L.divIcon({
+    className: '',
+    html: `<div style="width:16px;height:16px;border-radius:50%;background:#3ecfff;border:3px solid #fff;box-shadow:0 0 12px rgba(62,207,255,.6)"></div>`,
+    iconSize: [16, 16], iconAnchor: [8, 8]
+  });
+  userMarker = L.marker([lat, lng], { icon }).addTo(map).bindPopup('📍 Your Location');
+}
+
+function centerMap() {
+  if (currentLocation) map.setView([currentLocation.lat, currentLocation.lng], 14);
+  else getLocation();
+}
+
+function toggleMapLayer() {
+  showToast('Map layer toggled', 'info');
+}
+
+// ── RENDER SERVICES ───────────────────────────────────────────
+function renderServices(filter = '', cat = 'all') {
+  const list = document.getElementById('service-list');
+
+  // Show skeleton loading
+  list.innerHTML = [1,2,3].map(() => `<div class="skeleton skel-card"></div>`).join('');
+
+  setTimeout(() => {
+    let data = SERVICES;
+    if (cat !== 'all') data = data.filter(s => s.cat === cat);
+    if (filter) data = data.filter(s =>
+      s.name.toLowerCase().includes(filter.toLowerCase()) ||
+      s.area.toLowerCase().includes(filter.toLowerCase())
+    );
+
+    // Sort by distance from user
+    if (currentLocation) {
+      data = data.map(s => ({ ...s, dist: haversine(currentLocation.lat, currentLocation.lng, s.lat, s.lng) }))
+                 .sort((a, b) => a.dist - b.dist);
+    } else {
+      data = data.map(s => ({ ...s, dist: null }));
+    }
+
+    if (data.length === 0) {
+      list.innerHTML = `<div style="text-align:center;padding:30px;color:var(--t3)">No services found</div>`;
+      return;
+    }
+
+    list.innerHTML = data.map(s => {
+      const distText = s.dist !== null && s.dist < 9999 ? `${s.dist} km` : '—';
+      const color = getCatColor(s.cat);
+      const mapsUrl = `https://maps.google.com/?q=${s.lat},${s.lng}`;
+      const isEmergency = s.cat === 'hospital' || s.cat === 'ambulance' || s.cat === 'trauma';
+      return `
+      <div class="svc-card" style="--cat-color:${color}">
+        <div class="svc-icon" style="background:${color}18">${s.icon}</div>
+        <div class="svc-info">
+          <div class="svc-name">
+            ${s.name}
+            ${isEmergency ? `<span class="emg-badge" style="margin-left:6px">24x7</span>` : ''}
+          </div>
+          <div class="svc-meta">
+            <span class="svc-dist">📍 ${distText}</span>
+            <span>${s.area}</span>
+            <span class="svc-st ${s.status}">${s.status.toUpperCase()}</span>
+            ${s.rating ? `<span>⭐ ${s.rating}</span>` : ''}
+          </div>
+          <div class="svc-phone">${s.phone}${s.extraInfo ? ' · ' + s.extraInfo : ''}</div>
+        </div>
+        <div class="svc-acts">
+          <button class="call-btn" onclick="callNumber('${s.phone}')" title="Call ${s.name}">📞</button>
+          <a class="dir-btn" href="${mapsUrl}" target="_blank" title="Get Directions">🧭</a>
+        </div>
+      </div>`;
+    }).join('');
+  }, 400);
+}
+
+function renderServiceCards(data) {
+  // API data — map to local format and render
+  const mapped = data.map(s => ({
+    ...s, cat: s.category || s.cat, dist: currentLocation
+      ? haversine(currentLocation.lat, currentLocation.lng, s.lat, s.lng) : null
+  })).sort((a, b) => (a.dist || 9999) - (b.dist || 9999));
+  renderServicesFromData(mapped);
+}
+
+function renderServicesFromData(data) {
+  const list = document.getElementById('service-list');
+  if (!data.length) { list.innerHTML = `<div style="text-align:center;padding:30px;color:var(--t3)">No services found</div>`; return; }
+  list.innerHTML = data.map(s => {
+    const color = getCatColor(s.cat || s.category);
+    const dist = s.dist !== null && s.dist < 9999 ? `${s.dist} km` : (s.distance_km ? `${s.distance_km} km` : '—');
+    const mapsUrl = `https://maps.google.com/?q=${s.lat||0},${s.lng||0}`;
+    return `<div class="svc-card" style="--cat-color:${color}">
+      <div class="svc-icon" style="background:${color}18">${s.icon||'🏥'}</div>
+      <div class="svc-info">
+        <div class="svc-name">${s.name}</div>
+        <div class="svc-meta">
+          <span class="svc-dist">📍 ${dist}</span>
+          <span>${s.area||''}</span>
+          <span class="svc-st ${s.status}">${s.status.toUpperCase()}</span>
+          ${s.rating?`<span>⭐ ${s.rating}</span>`:''}
+        </div>
+        <div class="svc-phone">${s.phone}${s.extraInfo||s.extra_info?' · '+(s.extraInfo||s.extra_info):''}</div>
+      </div>
+      <div class="svc-acts">
+        <button class="call-btn" onclick="callNumber('${s.phone}')">📞</button>
+        <a class="dir-btn" href="${mapsUrl}" target="_blank">🧭</a>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectCategory(cat, el) {
+  currentCategory = cat;
+  document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderServices(document.getElementById('service-search').value, cat);
+}
+function filterServices() { renderServices(document.getElementById('service-search').value, currentCategory); }
+
+// ── RENDER CONTACTS ───────────────────────────────────────────
+function renderContactCards(data) {
+  document.getElementById('contacts-grid').innerHTML = data.map(c => `
+    <div class="contact-card">
+      <div class="contact-icon">${c.icon}</div>
+      <div class="contact-name">${c.name}</div>
+      <div class="contact-number">${c.number}</div>
+      <div class="contact-acts">
+        <button class="cc-btn cc-call" onclick="callNumber('${c.number}')">📞 Call</button>
+        <button class="cc-btn cc-sms" onclick="sendSMS('${c.number}')">💬 SMS</button>
+      </div>
+    </div>`).join('');
+}
+function renderContacts() { renderContactCards(EMERGENCY_CONTACTS); }
+
+function renderCountryCards(data) {
+  document.getElementById('countries-grid').innerHTML = data.map(c => `
+    <div class="country-card" onclick="callNumber('${c.number}')">
+      <div class="cf">${c.flag}</div>
+      <div class="cn">${c.country || c.name}</div>
+      <div class="cnum">${c.number}</div>
+      <div class="ctype">${c.type}</div>
+    </div>`).join('');
+}
+function renderCountries() { renderCountryCards(COUNTRIES); }
+
+function renderFirstAidCards(data) {
+  document.getElementById('firstaid-list').innerHTML = data.map((item, i) => `
+    <div class="fa-item" id="fa-${i}">
+      <div class="fa-hdr" onclick="toggleFirstAid(${i})">
+        <div class="fa-hdr-l"><span class="fa-icon">${item.icon}</span><span class="fa-title">${item.title}</span></div>
+        <span class="fa-chev">▼</span>
+      </div>
+      <div class="fa-body">
+        <ol>${item.steps.map(s => `<li>${s}</li>`).join('')}</ol>
+        ${item.warning ? `<div class="fa-warn">⚠️ ${item.warning}</div>` : ''}
+      </div>
+    </div>`).join('');
+}
+function renderFirstAid() { renderFirstAidCards(FIRST_AID); }
+function toggleFirstAid(i) { document.getElementById(`fa-${i}`).classList.toggle('open'); }
+
+// ── PERSONAL CONTACTS ─────────────────────────────────────────
+async function savePersonalContact() {
+  const name = document.getElementById('contact-name').value.trim();
+  const number = document.getElementById('contact-number').value.trim();
+  if (!name || !number) { showToast('Please enter name and number', 'error'); return; }
+  const res = await apiFetch('/contacts/personal', { method: 'POST', body: { device_id: DEVICE_ID, name, number } });
+  if (res.ok) {
+    document.getElementById('contact-name').value = '';
+    document.getElementById('contact-number').value = '';
+    await loadPersonalContacts();
+    showToast(`✅ ${name} saved`, 'success');
+  } else {
+    personalContacts.push({ id: Date.now().toString(), name, number, icon: '👤' });
+    localStorage.setItem('roadsos_contacts', JSON.stringify(personalContacts));
+    document.getElementById('contact-name').value = '';
+    document.getElementById('contact-number').value = '';
+    renderPersonalContactCards(personalContacts);
+    showToast(`✅ ${name} saved (offline)`, 'success');
+  }
+}
+async function loadPersonalContacts() {
+  const res = await apiFetch(`/contacts/personal/${DEVICE_ID}`);
+  renderPersonalContactCards(res.ok ? res.data.data : personalContacts);
+}
+function renderPersonalContactCards(contacts) {
+  const c = document.getElementById('personal-contacts');
+  if (!contacts || !contacts.length) { c.innerHTML = ''; return; }
+  c.innerHTML = `<div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:8px;letter-spacing:.5px;text-transform:uppercase">👤 My Contacts</div>
+    <div class="contacts-grid">${contacts.map(ct => `
+      <div class="contact-card">
+        <div class="contact-icon">${ct.icon || '👤'}</div>
+        <div class="contact-name">${ct.name}</div>
+        <div class="contact-number">${ct.number}</div>
+        <div class="contact-acts">
+          <button class="cc-btn cc-call" onclick="callNumber('${ct.number}')">📞 Call</button>
+          <button class="cc-btn" onclick="deleteContact('${ct.id}')" style="background:rgba(232,25,44,.1);border:1px solid rgba(232,25,44,.3);color:var(--red-l)">🗑️</button>
+        </div>
+      </div>`).join('')}</div>`;
+}
+async function deleteContact(id) {
+  const res = await apiFetch(`/contacts/personal/${id}`, { method: 'DELETE' });
+  if (res.ok) { await loadPersonalContacts(); }
+  else { personalContacts = personalContacts.filter(c => String(c.id) !== String(id)); localStorage.setItem('roadsos_contacts', JSON.stringify(personalContacts)); renderPersonalContactCards(personalContacts); }
+  showToast('Contact removed', 'info');
+}
+
+// ── SOS ACTIVATION ────────────────────────────────────────────
+async function activateSOS() {
+  // Visual flash
+  const btn = document.getElementById('sos-btn');
+  btn.classList.add('activated');
+  setTimeout(() => btn.classList.remove('activated'), 1500);
+
+  // Show alert popup immediately
+  showAlert('🚨', 'SOS Activated!', 'Contacting emergency services…');
+
+  // Post to backend
+  const sosPayload = {
+    device_id: DEVICE_ID,
+    lat: currentLocation?.lat || null,
+    lng: currentLocation?.lng || null,
+    accuracy: currentLocation?.acc || null,
+    address: document.getElementById('loc-address').textContent || null,
+  };
+  const sosRes = await apiFetch('/sos', { method: 'POST', body: sosPayload });
+  const sosId = sosRes.ok ? sosRes.data.data.id : null;
+
+  const locText = currentLocation
+    ? `${currentLocation.lat.toFixed(5)}°N, ${currentLocation.lng.toFixed(5)}°E`
+    : (() => { const c = localStorage.getItem('roadsos_last_location'); return c ? `${JSON.parse(c).lat.toFixed(5)}°N, ${JSON.parse(c).lng.toFixed(5)}°E (cached)` : 'Location unavailable'; })();
+
+  const pcRes = await apiFetch(`/contacts/personal/${DEVICE_ID}`);
+  const myContacts = pcRes.ok ? pcRes.data.data : personalContacts;
+
+  // Find nearest hospital
+  let nearestHospital = null;
+  if (currentLocation) {
+    nearestHospital = SERVICES.filter(s => s.cat === 'hospital')
+      .map(s => ({ ...s, dist: haversine(currentLocation.lat, currentLocation.lng, s.lat, s.lng) }))
+      .sort((a, b) => a.dist - b.dist)[0];
+  }
+
+  document.getElementById('sos-modal-content').innerHTML = `
+    <div style="background:rgba(232,25,44,.1);border:1px solid rgba(232,25,44,.3);border-radius:12px;padding:16px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:800;color:var(--red-l);margin-bottom:6px">🚨 EMERGENCY ACTIVATED</div>
+      <div style="font-size:12px;color:var(--t2)">Your location is being shared with emergency services</div>
+      <div style="font-size:12px;color:var(--blue);font-family:var(--mono);margin-top:6px">📍 ${locText}</div>
+      ${sosId ? `<div style="font-size:10px;color:var(--t3);margin-top:4px">SOS ID: ${sosId}</div>` : ''}
+    </div>
+    ${nearestHospital ? `
+    <div style="background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.2);border-radius:10px;padding:12px;margin-bottom:14px">
+      <div style="font-size:11px;color:var(--green);font-weight:700;margin-bottom:4px">🏥 NEAREST HOSPITAL</div>
+      <div style="font-size:14px;font-weight:700">${nearestHospital.name}</div>
+      <div style="font-size:12px;color:var(--t2)">${nearestHospital.area} · ${nearestHospital.dist} km away</div>
+      <button onclick="callNumber('${nearestHospital.phone}')" style="margin-top:8px;width:100%;padding:9px;border-radius:8px;background:rgba(0,214,143,.15);border:1px solid rgba(0,214,143,.3);color:var(--green);font-size:13px;font-weight:700;cursor:pointer">📞 Call ${nearestHospital.phone}</button>
+    </div>` : ''}
+    <div style="font-size:13px;font-weight:700;margin-bottom:10px">⚡ Immediate Actions:</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+      <button onclick="callNumber('112')" style="padding:14px;border-radius:12px;background:var(--red);color:#fff;font-size:15px;font-weight:800;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(232,25,44,.35)">📞 CALL 112 — National Emergency</button>
+      <button onclick="callNumber('108')" style="padding:12px;border-radius:12px;background:rgba(255,124,42,.15);border:1px solid rgba(255,124,42,.4);color:var(--orange);font-size:14px;font-weight:700;cursor:pointer">🚑 CALL 108 — Ambulance</button>
+      <button onclick="callNumber('100')" style="padding:12px;border-radius:12px;background:rgba(62,207,255,.1);border:1px solid rgba(62,207,255,.3);color:var(--blue);font-size:14px;font-weight:700;cursor:pointer">👮 CALL 100 — Police</button>
+      <button onclick="shareLocation()" style="padding:12px;border-radius:12px;background:rgba(0,214,143,.1);border:1px solid rgba(0,214,143,.3);color:var(--green);font-size:14px;font-weight:700;cursor:pointer">📍 Share Location via WhatsApp/SMS</button>
+    </div>
+    <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:8px">📋 While waiting for help:</div>
+    <ul style="font-size:12px;color:var(--t2);padding-left:18px;line-height:1.9">
+      <li>Stay calm and keep the victim still</li>
+      <li>Do not move victim if spinal injury suspected</li>
+      <li>Apply pressure to any bleeding wounds</li>
+      <li>Keep victim warm and conscious</li>
+      <li>Clear the road to allow emergency vehicles</li>
+      <li>Turn on hazard lights of all vehicles</li>
+    </ul>
+    ${myContacts.length > 0 ? `
+      <div style="margin-top:16px;font-size:12px;font-weight:700;color:var(--t2);margin-bottom:8px">👤 Alert Personal Contacts:</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${myContacts.map(c => `<button onclick="callNumber('${c.number}')" style="padding:10px;border-radius:10px;background:var(--bg3);border:1px solid var(--b);color:var(--t);font-size:13px;cursor:pointer;text-align:left">👤 ${c.name} — ${c.number}</button>`).join('')}
+      </div>` : ''}`;
+
+  document.getElementById('sos-modal').classList.add('show');
+  showToast('🚨 SOS Activated!', 'error');
+}
+
+// ── UTILITIES ─────────────────────────────────────────────────
+function callNumber(num) {
+  window.location.href = `tel:${num}`;
+  showToast(`📞 Calling ${num}…`, 'success');
+}
+function sendSMS(num) {
+  const loc = currentLocation ? `${currentLocation.lat.toFixed(5)},${currentLocation.lng.toFixed(5)}` : 'Location unavailable';
+  window.location.href = `sms:${num}?body=🚨 EMERGENCY - Road Accident. My location: ${loc} - Sent via ROADSOS`;
+}
+function shareLocation() {
+  const loc = currentLocation
+    ? `https://maps.google.com/?q=${currentLocation.lat},${currentLocation.lng}`
+    : (() => { const c = localStorage.getItem('roadsos_last_location'); return c ? `https://maps.google.com/?q=${JSON.parse(c).lat},${JSON.parse(c).lng}` : null; })();
+  const msg = loc
+    ? `🚨 EMERGENCY - Road Accident! My location: ${loc} - Please send help immediately! (via ROADSOS)`
+    : `🚨 EMERGENCY - Road Accident! Please call 112 immediately! (via ROADSOS)`;
+  if (navigator.share) navigator.share({ title: 'ROADSOS Emergency', text: msg }).catch(() => copyToClipboard(msg));
+  else copyToClipboard(msg);
+}
+function copyToClipboard(text) {
+  if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => showToast('📋 Copied to clipboard', 'info'));
+  else { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); showToast('📋 Copied', 'info'); }
+}
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function scrollToSection(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+}
+function showToast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `show ${type}`;
+  setTimeout(() => { t.className = ''; }, 3000);
+}
+function showAlert(icon, text, sub) {
+  document.getElementById('alert-icon').textContent = icon;
+  document.getElementById('alert-text').textContent = text;
+  document.getElementById('alert-sub').textContent = sub;
+  const popup = document.getElementById('alert-popup');
+  popup.classList.add('show');
+  setTimeout(() => popup.classList.remove('show'), 4000);
+}
+
+// ── OFFLINE TOOLKIT ───────────────────────────────────────────
+function showOfflineContacts() {
+  alert('📞 Emergency Numbers:\n\n' + EMERGENCY_CONTACTS.map(c => `${c.icon} ${c.name}: ${c.number}`).join('\n'));
+}
+function showFirstAidQuick() {
+  scrollToSection('firstaid-section');
+  const fa = document.getElementById('fa-0');
+  if (fa && !fa.classList.contains('open')) fa.classList.add('open');
+}
+function showLastLocation() {
+  const cached = localStorage.getItem('roadsos_last_location');
+  if (cached) {
+    const loc = JSON.parse(cached);
+    alert(`📍 Last Known Location:\n\n${loc.address}\nCoords: ${loc.lat.toFixed(5)}°N, ${loc.lng.toFixed(5)}°E\nCached at: ${new Date(loc.time).toLocaleString('en-IN')}`);
+  } else alert('No cached location. Please enable GPS and refresh.');
+}
+function showOfflineServices() {
+  const top5 = SERVICES.slice(0, 5);
+  alert('🏥 Nearest Services (cached):\n\n' + top5.map(s => `${s.icon} ${s.name} — ${s.phone}`).join('\n'));
+}
+function cacheData() {
+  try {
+    localStorage.setItem('roadsos_services', JSON.stringify(SERVICES));
+    localStorage.setItem('roadsos_contacts_cache', JSON.stringify(EMERGENCY_CONTACTS));
+    localStorage.setItem('roadsos_cache_time', new Date().toISOString());
+    document.getElementById('cache-badge').textContent = '✅ Cached';
+    document.getElementById('cache-badge').className = 'badge green';
+  } catch(e) {
+    document.getElementById('cache-badge').textContent = '⚠️ Cache Failed';
+    document.getElementById('cache-badge').className = 'badge orange';
+  }
+}
+
+// ── INCIDENT REPORT ───────────────────────────────────────────
+async function submitReport(e) {
+  e.preventDefault();
+  const acc_type = document.getElementById('acc-type').value;
+  const severity = document.getElementById('acc-severity').value;
+  const location_txt = document.getElementById('acc-location').value.trim();
+  const people = document.getElementById('acc-people').value;
+  const description = document.getElementById('acc-desc').value.trim();
+  const contact_num = document.getElementById('acc-contact').value.trim();
+  if (!acc_type || !severity || !location_txt) { showToast('Please fill required fields', 'error'); return; }
+
+  const payload = { device_id: DEVICE_ID, acc_type, severity, location_txt,
+    lat: currentLocation?.lat || null, lng: currentLocation?.lng || null,
+    people_count: people ? parseInt(people) : 1, description: description || null, contact_num: contact_num || null };
+
+  const res = await apiFetch('/reports', { method: 'POST', body: payload });
+  if (res.ok) {
+    e.target.reset();
+    showToast('✅ Report submitted', 'success');
+    showAlert('✅', 'Report Submitted', `ID: ${res.data.data.id.slice(0,8)}…`);
+  } else {
+    const report = { id: Date.now(), acc_type, severity, location_txt, time: new Date().toISOString() };
+    const reports = JSON.parse(localStorage.getItem('roadsos_reports') || '[]');
+    reports.push(report); localStorage.setItem('roadsos_reports', JSON.stringify(reports));
+    e.target.reset();
+    showToast('✅ Report saved locally (offline)', 'success');
+  }
+}
+
+// ── VOICE ASSISTANT ───────────────────────────────────────────
+function initVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    document.getElementById('voice-btn').textContent = '🎙️ Voice not supported in this browser';
+    document.getElementById('voice-btn').disabled = true;
+    return;
+  }
+  recognition = new SR();
+  recognition.continuous = false; recognition.interimResults = false; recognition.lang = 'en-IN';
+  recognition.onresult = (e) => runVoiceCmd(e.results[0][0].transcript.toLowerCase().trim());
+  recognition.onend = () => {
+    voiceActive = false;
+    document.getElementById('voice-btn').textContent = '🎙️ Tap to Speak';
+    document.getElementById('voice-btn').classList.remove('active');
+    document.getElementById('voice-orb').classList.remove('listening');
+  };
+  recognition.onerror = () => {
+    voiceActive = false;
+    document.getElementById('voice-btn').textContent = '🎙️ Tap to Speak';
+    document.getElementById('voice-btn').classList.remove('active');
+    document.getElementById('voice-orb').classList.remove('listening');
+    showVoiceOutput('❌ Could not hear you. Please try again.');
+  };
+}
+function toggleVoice() {
+  if (!recognition) return;
+  if (voiceActive) { recognition.stop(); voiceActive = false; }
+  else {
+    recognition.start(); voiceActive = true;
+    document.getElementById('voice-btn').textContent = '🔴 Listening… Speak now';
+    document.getElementById('voice-btn').classList.add('active');
+    document.getElementById('voice-orb').classList.add('listening');
+    showVoiceOutput('🎙️ Listening… Say a command');
+  }
+}
+function runVoiceCmd(cmd) {
+  let r = '';
+  if (cmd.includes('sos') || cmd.includes('emergency') || cmd.includes('help')) {
+    r = '🚨 Activating SOS…'; setTimeout(activateSOS, 500);
+  } else if (cmd.includes('hospital') || cmd.includes('doctor')) {
+    r = '🏥 Showing nearby hospitals…'; selectCategory('hospital', document.querySelector('[data-cat="hospital"]')); scrollToSection('service-list');
+  } else if (cmd.includes('ambulance')) {
+    r = '🚑 Calling ambulance 108…'; setTimeout(() => callNumber('108'), 1000);
+  } else if (cmd.includes('police')) {
+    r = '👮 Calling police 100…'; setTimeout(() => callNumber('100'), 1000);
+  } else if (cmd.includes('tow') || cmd.includes('towing')) {
+    r = '🚗 Showing towing services…'; selectCategory('towing', document.querySelector('[data-cat="towing"]')); scrollToSection('service-list');
+  } else if (cmd.includes('location') || cmd.includes('where am i')) {
+    r = '📍 Refreshing your location…'; getLocation();
+  } else if (cmd.includes('first aid') || cmd.includes('firstaid')) {
+    r = '🩹 Opening first aid guide…'; scrollToSection('firstaid-section');
+  } else if (cmd.includes('map')) {
+    r = '🗺️ Opening live map…'; scrollToSection('map-sec');
+  } else if (cmd.includes('112')) {
+    r = '📞 Calling 112…'; setTimeout(() => callNumber('112'), 1000);
+  } else {
+    r = `❓ Not recognised: "${cmd}". Try "Send SOS", "Find hospital", "Call police"`;
+  }
+  showVoiceOutput(r);
+}
+function showVoiceOutput(msg) {
+  const el = document.getElementById('voice-out');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 5000);
+}
+
+// ── THEME TOGGLE ──────────────────────────────────────────────
+let darkMode = true;
+function toggleTheme() {
+  darkMode = !darkMode;
+  const r = document.documentElement.style;
+  if (!darkMode) {
+    r.setProperty('--bg','#f0f4f8'); r.setProperty('--bg2','#e8edf3'); r.setProperty('--bg3','#dde3ec');
+    r.setProperty('--bg4','#d0d8e4'); r.setProperty('--card','#ffffff'); r.setProperty('--card2','#f5f8fc');
+    r.setProperty('--b','rgba(0,0,0,.08)'); r.setProperty('--bh','rgba(0,0,0,.15)');
+    r.setProperty('--t','#0f172a'); r.setProperty('--t2','#475569'); r.setProperty('--t3','#94a3b8');
+    document.getElementById('theme-btn').textContent = '☀️';
+  } else {
+    r.setProperty('--bg','#07090f'); r.setProperty('--bg2','#0c0f18'); r.setProperty('--bg3','#111520');
+    r.setProperty('--bg4','#171d2b'); r.setProperty('--card','#0e1219'); r.setProperty('--card2','#121824');
+    r.setProperty('--b','rgba(255,255,255,.06)'); r.setProperty('--bh','rgba(255,255,255,.13)');
+    r.setProperty('--t','#eef2f7'); r.setProperty('--t2','#8896a8'); r.setProperty('--t3','#3d4f63');
+    document.getElementById('theme-btn').textContent = '🌙';
+  }
+}
+
+// Close modal on overlay click
+document.addEventListener('click', (e) => {
+  if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('show');
+});
+</script>
+</body>
+</html>

@@ -1206,6 +1206,11 @@ let personalContacts = JSON.parse(localStorage.getItem('roadsos_contacts') || '[
 let map = null;
 let userMarker = null;
 let serviceMarkers = [];
+let currentTileLayer = null;
+let isSatellite = false;
+
+const TILE_STREET    = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const TILE_SATELLITE = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 
 // ── API ───────────────────────────────────────────────────────
 const API_BASE = location.protocol !== 'file:' ? '/api' : 'http://localhost:3000/api';
@@ -1263,7 +1268,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   getLocation(); // this calls renderServices once GPS resolves
 
-  window.addEventListener('online',  () => { isOnline = true;  checkNetwork(); loadAllData().then(() => { renderContacts(); renderCountries(); renderFirstAid(); addServiceMarkers(); if (currentLocation) renderServices('', currentCategory); }); });
+  window.addEventListener('online',  () => {
+    isOnline = true;
+    checkNetwork();
+    loadAllData().then(() => { renderContacts(); renderCountries(); renderFirstAid(); addServiceMarkers(); if (currentLocation) loadNearbyServices(currentLocation.lat, currentLocation.lng, '', currentCategory); });
+    drainOfflineQueues(); // flush any queued SOS/reports
+  });
   window.addEventListener('offline', () => { isOnline = false; checkNetwork(); });
 });
 
@@ -1481,7 +1491,7 @@ function initMap() {
 
   map = L.map('emergency-map', { zoomControl: true, attributionControl: false })
          .setView([defaultLat, defaultLng], defaultZoom);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
+  currentTileLayer = L.tileLayer(TILE_STREET, { maxZoom: 18 }).addTo(map);
   addServiceMarkers();
 }
 
@@ -1522,7 +1532,19 @@ function centerMap() {
   if (currentLocation) map.setView([currentLocation.lat, currentLocation.lng], 14);
   else getLocation();
 }
-function toggleMapLayer() { showToast('Map layer toggled', 'info'); }
+function toggleMapLayer() {
+  if (!map || !currentTileLayer) return;
+  map.removeLayer(currentTileLayer);
+  isSatellite = !isSatellite;
+  currentTileLayer = L.tileLayer(
+    isSatellite ? TILE_SATELLITE : TILE_STREET,
+    { maxZoom: 18 }
+  ).addTo(map);
+  // Update button icon
+  const btn = document.querySelector('.map-btn[onclick="toggleMapLayer()"]');
+  if (btn) btn.textContent = isSatellite ? '🛰️' : '🗺️';
+  showToast(isSatellite ? '🛰️ Satellite view' : '🗺️ Street view', 'info');
+}
 
 // ── RENDER SERVICES ───────────────────────────────────────────
 function renderServices(filter = '', cat = 'all') {
@@ -1745,6 +1767,17 @@ async function activateSOS() {
   const sosRes = await apiFetch('/sos', { method: 'POST', body: sosPayload });
   const sosId  = sosRes.ok ? sosRes.data.data.id : null;
 
+  // If offline, queue to IndexedDB for background sync
+  if (!sosRes.ok) {
+    await idbQueue('sos_queue', sosPayload);
+    // Register background sync if supported
+    if ('serviceWorker' in navigator && 'SyncManager' in window) {
+      const reg = await navigator.serviceWorker.ready;
+      await reg.sync.register('sync-sos').catch(() => {});
+    }
+    showToast('📴 SOS queued — will sync when online', 'info');
+  }
+
   const locText = currentLocation
     ? `${currentLocation.lat.toFixed(5)}°N, ${currentLocation.lng.toFixed(5)}°E`
     : (() => { const c = localStorage.getItem('roadsos_last_location'); return c ? `${JSON.parse(c).lat.toFixed(5)}°N, ${JSON.parse(c).lng.toFixed(5)}°E (cached)` : 'Location unavailable'; })();
@@ -1911,11 +1944,15 @@ async function submitReport(e) {
     showToast('✅ Report submitted', 'success');
     showAlert('✅', 'Report Submitted', `ID: ${res.data.data.id.slice(0,8)}…`);
   } else {
-    const report = { id: Date.now(), acc_type, severity, location_txt, time: new Date().toISOString() };
-    const reports = JSON.parse(localStorage.getItem('roadsos_reports') || '[]');
-    reports.push(report); localStorage.setItem('roadsos_reports', JSON.stringify(reports));
+    // Queue to IndexedDB for background sync
+    await idbQueue('report_queue', payload);
+    if ('serviceWorker' in navigator && 'SyncManager' in window) {
+      const reg = await navigator.serviceWorker.ready;
+      await reg.sync.register('sync-reports').catch(() => {});
+    }
     e.target.reset();
-    showToast('✅ Report saved locally (offline)', 'success');
+    showToast('📴 Report queued — will sync when online', 'info');
+    showAlert('📴', 'Report Saved Offline', 'Will sync automatically when connected');
   }
 }
 
@@ -2014,6 +2051,91 @@ function toggleTheme() {
 document.addEventListener('click', (e) => {
   if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('show');
 });
+
+// ── INDEXEDDB OFFLINE QUEUE ───────────────────────────────────
+const IDB_NAME    = 'roadsos-offline';
+const IDB_VERSION = 1;
+
+function idbOpen() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('sos_queue'))
+        db.createObjectStore('sos_queue', { keyPath: 'id', autoIncrement: true });
+      if (!db.objectStoreNames.contains('report_queue'))
+        db.createObjectStore('report_queue', { keyPath: 'id', autoIncrement: true });
+    };
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+async function idbQueue(store, payload) {
+  try {
+    const db = await idbOpen();
+    return new Promise((resolve, reject) => {
+      const tx  = db.transaction(store, 'readwrite');
+      const req = tx.objectStore(store).add({ payload, queuedAt: new Date().toISOString() });
+      req.onsuccess = () => resolve(req.result);
+      req.onerror   = e => reject(e.target.error);
+    });
+  } catch (err) {
+    console.warn('[IDB] Queue failed:', err.message);
+  }
+}
+
+async function idbGetAll(store) {
+  try {
+    const db = await idbOpen();
+    return new Promise((resolve, reject) => {
+      const tx  = db.transaction(store, 'readonly');
+      const req = tx.objectStore(store).getAll();
+      req.onsuccess = e => resolve(e.target.result);
+      req.onerror   = e => reject(e.target.error);
+    });
+  } catch (_) { return []; }
+}
+
+async function idbDelete(store, id) {
+  try {
+    const db = await idbOpen();
+    return new Promise((resolve, reject) => {
+      const tx  = db.transaction(store, 'readwrite');
+      const req = tx.objectStore(store).delete(id);
+      req.onsuccess = () => resolve();
+      req.onerror   = e => reject(e.target.error);
+    });
+  } catch (_) {}
+}
+
+/** Manually drain the offline queues (called when coming back online) */
+async function drainOfflineQueues() {
+  const sosItems = await idbGetAll('sos_queue');
+  for (const item of sosItems) {
+    const res = await apiFetch('/sos', { method: 'POST', body: item.payload });
+    if (res.ok) {
+      await idbDelete('sos_queue', item.id);
+      showToast('🔄 Offline SOS synced', 'success');
+    }
+  }
+  const rptItems = await idbGetAll('report_queue');
+  for (const item of rptItems) {
+    const res = await apiFetch('/reports', { method: 'POST', body: item.payload });
+    if (res.ok) {
+      await idbDelete('report_queue', item.id);
+      showToast('🔄 Offline report synced', 'success');
+    }
+  }
+}
+
+// Listen for sync-complete messages from the Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data?.type === 'SOS_SYNCED')    showToast('🔄 Offline SOS synced to server', 'success');
+    if (e.data?.type === 'REPORT_SYNCED') showToast('🔄 Offline report synced to server', 'success');
+  });
+}
 
 // ── SERVICE WORKER REGISTRATION ───────────────────────────────
 if ('serviceWorker' in navigator) {

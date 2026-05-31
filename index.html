@@ -1187,66 +1187,14 @@ footer {
    Firebase Firestore + Leaflet Map + Web Speech API
 ============================================================ */
 
-// ── STATIC DATA ──────────────────────────────────────────────
-const SERVICES = [
-  {id:1,cat:'hospital',name:'AIIMS Trauma Centre',lat:28.5672,lng:77.2100,phone:'011-26588500',alt:'112',status:'open',area:'Ansari Nagar, Delhi',icon:'🏥',rating:4.8,extraInfo:'Level 1 Trauma, 24x7'},
-  {id:2,cat:'hospital',name:'Safdarjung Hospital',lat:28.5706,lng:77.2040,phone:'011-26707444',alt:'108',status:'open',area:'Ring Road, Delhi',icon:'🏥',rating:4.5,extraInfo:'Govt, Free OPD'},
-  {id:3,cat:'hospital',name:'Apollo Hospital',lat:28.5355,lng:77.2910,phone:'1860-500-1066',alt:'112',status:'open',area:'Sarita Vihar, Delhi',icon:'🏥',rating:4.7,extraInfo:'Private, 24x7'},
-  {id:4,cat:'hospital',name:'Max Super Speciality',lat:28.5244,lng:77.2066,phone:'011-26515050',alt:'108',status:'busy',area:'Saket, Delhi',icon:'🏥',rating:4.6,extraInfo:'ICU Available'},
-  {id:5,cat:'hospital',name:'Fortis Hospital',lat:28.5200,lng:77.1580,phone:'1800-111-4567',alt:'112',status:'open',area:'Vasant Kunj, Delhi',icon:'🏥',rating:4.5,extraInfo:'Trauma Unit'},
-  {id:6,cat:'hospital',name:'RML Hospital',lat:28.6328,lng:77.2197,phone:'011-23404000',alt:'108',status:'open',area:'Connaught Place, Delhi',icon:'🏥',rating:4.3,extraInfo:'Govt, Central Delhi'},
-  {id:7,cat:'hospital',name:'GTB Hospital',lat:28.6692,lng:77.3050,phone:'011-22582525',alt:'108',status:'open',area:'Shahdara, Delhi',icon:'🏥',rating:4.2,extraInfo:'Govt, East Delhi'},
-  {id:8,cat:'hospital',name:'Medanta Hospital',lat:28.4595,lng:77.0266,phone:'0124-4141414',alt:'108',status:'open',area:'Sector 38, Gurugram',icon:'🏥',rating:4.8,extraInfo:'World Class'},
-  {id:9,cat:'ambulance',name:'National Ambulance 108',lat:28.6139,lng:77.2090,phone:'108',alt:'112',status:'open',area:'Nationwide',icon:'🚑',rating:4.4,extraInfo:'Free Govt Service'},
-  {id:10,cat:'ambulance',name:'Ziqitza Ambulance',lat:28.6200,lng:77.2150,phone:'1800-419-1919',alt:'108',status:'open',area:'Delhi NCR',icon:'🚑',rating:4.6,extraInfo:'ALS/BLS Available'},
-  {id:11,cat:'ambulance',name:'StanPlus Ambulance',lat:28.5355,lng:77.2910,phone:'1800-313-1414',alt:'112',status:'open',area:'Delhi NCR',icon:'🚑',rating:4.7,extraInfo:'15-min response'},
-  {id:12,cat:'ambulance',name:'GVK EMRI Ambulance',lat:28.6692,lng:77.3050,phone:'108',alt:'112',status:'busy',area:'Delhi NCR',icon:'🚑',rating:4.3,extraInfo:'Govt, Free'},
-  {id:13,cat:'ambulance',name:'Medanta Ambulance',lat:28.4595,lng:77.0266,phone:'0124-4141414',alt:'108',status:'open',area:'Gurugram',icon:'🚑',rating:4.8,extraInfo:'ICU on wheels'},
-  {id:14,cat:'police',name:'Delhi Traffic Police',lat:28.6139,lng:77.2090,phone:'1095',alt:'100',status:'open',area:'All Delhi',icon:'👮',rating:4.2,extraInfo:'Traffic Control'},
-  {id:15,cat:'police',name:'Connaught Place PS',lat:28.6328,lng:77.2197,phone:'011-23341151',alt:'100',status:'open',area:'CP, Delhi',icon:'👮',rating:4.1,extraInfo:'Central Delhi'},
-  {id:16,cat:'police',name:'Saket Police Station',lat:28.5244,lng:77.2066,phone:'011-29563100',alt:'100',status:'open',area:'Saket, Delhi',icon:'👮',rating:4.0,extraInfo:'South Delhi'},
-  {id:17,cat:'police',name:'Highway Patrol NH-48',lat:28.4595,lng:77.0266,phone:'1033',alt:'100',status:'open',area:'NH-48, Gurugram',icon:'👮',rating:4.3,extraInfo:'Highway Patrol'},
-  {id:18,cat:'police',name:'PCR Van Control Room',lat:28.6139,lng:77.2090,phone:'100',alt:'112',status:'open',area:'Delhi',icon:'👮',rating:4.5,extraInfo:'24x7 PCR'},
-  {id:19,cat:'towing',name:'Delhi Towing Services',lat:28.6139,lng:77.2090,phone:'9810012345',alt:'',status:'open',area:'Delhi NCR',icon:'🚗',rating:4.2,extraInfo:'24x7, All vehicles'},
-  {id:20,cat:'towing',name:'Rapid Tow & Recovery',lat:28.5244,lng:77.2066,phone:'9899123456',alt:'',status:'open',area:'South Delhi',icon:'🚗',rating:4.4,extraInfo:'Heavy vehicles'},
-  {id:21,cat:'towing',name:'NH Towing Services',lat:28.4595,lng:77.0266,phone:'9711234567',alt:'',status:'busy',area:'NH-48, Gurugram',icon:'🚗',rating:4.1,extraInfo:'Highway specialist'},
-  {id:22,cat:'towing',name:'QuickTow Delhi',lat:28.6692,lng:77.1050,phone:'9871234567',alt:'',status:'open',area:'West Delhi',icon:'🚗',rating:4.3,extraInfo:'24x7, Flatbed'},
-  {id:23,cat:'towing',name:'AAI Road Assist',lat:28.6139,lng:77.2090,phone:'1800-200-1111',alt:'',status:'open',area:'Delhi NCR',icon:'🚗',rating:4.5,extraInfo:'Insurance tie-up'},
-  {id:24,cat:'puncture',name:'Sharma Tyre Works',lat:28.5672,lng:77.2430,phone:'9810098765',alt:'',status:'open',area:'Lajpat Nagar',icon:'🔧',rating:4.0,extraInfo:'All tyre brands'},
-  {id:25,cat:'puncture',name:'24x7 Tyre Repair',lat:28.5244,lng:77.2066,phone:'9899876543',alt:'',status:'open',area:'Saket',icon:'🔧',rating:4.2,extraInfo:'Mobile service'},
-  {id:26,cat:'puncture',name:'MRF Tyre Service',lat:28.5200,lng:77.1580,phone:'1800-419-0909',alt:'',status:'open',area:'Vasant Kunj',icon:'🔧',rating:4.4,extraInfo:'Authorised MRF'},
-  {id:27,cat:'trauma',name:'AIIMS Trauma Centre',lat:28.5672,lng:77.2100,phone:'011-26588700',alt:'112',status:'open',area:'Ansari Nagar',icon:'🩺',rating:4.9,extraInfo:'Level 1 Trauma'},
-  {id:28,cat:'trauma',name:'GTB Hospital Trauma',lat:28.6692,lng:77.3050,phone:'011-22582525',alt:'108',status:'open',area:'Shahdara, Delhi',icon:'🩺',rating:4.4,extraInfo:'Level 2 Trauma'},
-  {id:29,cat:'trauma',name:'Safdarjung Trauma',lat:28.5706,lng:77.2040,phone:'011-26707000',alt:'108',status:'busy',area:'Ring Road',icon:'🩺',rating:4.6,extraInfo:'Level 1 Trauma'},
-  {id:30,cat:'trauma',name:'Medanta Trauma',lat:28.4595,lng:77.0266,phone:'0124-4141414',alt:'108',status:'open',area:'Gurugram',icon:'🩺',rating:4.8,extraInfo:'Level 1 Trauma'},
-];
-
-const EMERGENCY_CONTACTS = [
-  {name:'National Emergency',number:'112',icon:'🆘'},{name:'Ambulance',number:'108',icon:'🚑'},
-  {name:'Police',number:'100',icon:'👮'},{name:'Fire Brigade',number:'101',icon:'🔥'},
-  {name:'Traffic Police',number:'1095',icon:'🚦'},{name:'Highway Helpline',number:'1033',icon:'🛣️'},
-  {name:'Women Helpline',number:'1091',icon:'👩'},{name:'Child Helpline',number:'1098',icon:'👶'},
-  {name:'Disaster Mgmt',number:'1078',icon:'⚠️'},{name:'Blood Bank',number:'1910',icon:'🩸'},
-];
-const COUNTRIES = [
-  {flag:'🇮🇳',name:'India',number:'112',type:'All Emergency'},{flag:'🇺🇸',name:'USA',number:'911',type:'All Emergency'},
-  {flag:'🇬🇧',name:'UK',number:'999',type:'All Emergency'},{flag:'🇦🇺',name:'Australia',number:'000',type:'All Emergency'},
-  {flag:'🇨🇦',name:'Canada',number:'911',type:'All Emergency'},{flag:'🇩🇪',name:'Germany',number:'112',type:'All Emergency'},
-  {flag:'🇫🇷',name:'France',number:'15/17',type:'Medical/Police'},{flag:'🇯🇵',name:'Japan',number:'119',type:'Ambulance'},
-  {flag:'🇨🇳',name:'China',number:'120',type:'Ambulance'},{flag:'🇧🇷',name:'Brazil',number:'192',type:'Ambulance'},
-  {flag:'🇿🇦',name:'S.Africa',number:'10177',type:'Ambulance'},{flag:'🇦🇪',name:'UAE',number:'998',type:'Ambulance'},
-  {flag:'🇸🇬',name:'Singapore',number:'995',type:'Ambulance'},{flag:'🇳🇿',name:'New Zealand',number:'111',type:'All Emergency'},
-  {flag:'🇮🇹',name:'Italy',number:'118',type:'Ambulance'},{flag:'🇪🇸',name:'Spain',number:'112',type:'All Emergency'},
-  {flag:'🇷🇺',name:'Russia',number:'103',type:'Ambulance'},{flag:'🇲🇾',name:'Malaysia',number:'999',type:'All Emergency'},
-];
-const FIRST_AID = [
-  {icon:'🩸',title:'Controlling Bleeding',steps:['Apply firm, direct pressure with a clean cloth or bandage','Do NOT remove the cloth — add more on top if soaked','Elevate the injured limb above heart level if possible','Maintain pressure for at least 10–15 minutes','For severe limb bleeding, apply tourniquet 2–3 inches above wound'],warning:'Do NOT apply tourniquet on neck, chest, or abdomen'},
-  {icon:'🫁',title:'CPR (Cardiopulmonary Resuscitation)',steps:['Check scene safety, then check victim responsiveness','Call 112 or ask someone to call immediately','Tilt head back, lift chin, check for breathing (10 seconds)','Give 30 chest compressions — hard and fast (100–120/min)','Give 2 rescue breaths (if trained)','Continue 30:2 cycle until help arrives'],warning:'Only give rescue breaths if trained. Hands-only CPR is effective'},
-  {icon:'🦴',title:'Suspected Spinal Injury',steps:['DO NOT move the victim unless in immediate danger','Keep head, neck, and spine aligned at all times','If must move, use log-roll technique with multiple helpers','Support head and neck manually until EMS arrives','Keep victim warm and calm'],warning:'Moving a spinal injury victim incorrectly can cause permanent paralysis'},
-  {icon:'🔥',title:'Burns from Accident',steps:['Remove victim from heat source safely','Cool burn with cool (not cold/ice) running water for 20 minutes','Remove jewellery/clothing near burn (if not stuck)','Cover loosely with clean non-fluffy material','Do NOT apply butter, toothpaste, or ice'],warning:'Do NOT burst blisters. Seek medical help for burns larger than palm size'},
-  {icon:'😵',title:'Unconscious Victim',steps:['Check for response — tap shoulders, shout','Call 112 immediately','Open airway — tilt head, lift chin','Check breathing for 10 seconds','If breathing: place in recovery position (on side)','If not breathing: start CPR'],warning:'Never give food or water to an unconscious person'},
-  {icon:'🦵',title:'Fractures & Broken Bones',steps:['Immobilise the injured area — do not try to straighten','Support above and below the fracture site','Apply improvised splint (stick, rolled newspaper)','Apply ice pack wrapped in cloth to reduce swelling','Elevate if possible and keep victim still'],warning:'Open fractures (bone visible) are medical emergencies — call 108 immediately'},
-];
+// ── DYNAMIC DATA CACHE ───────────────────────────────────────
+// No hardcoded arrays. All data is fetched from the API and
+// cached in localStorage for offline use.
+// These are populated at runtime by loadAllData().
+let SERVICES          = JSON.parse(localStorage.getItem('cache_services')   || '[]');
+let EMERGENCY_CONTACTS = JSON.parse(localStorage.getItem('cache_contacts')  || '[]');
+let COUNTRIES         = JSON.parse(localStorage.getItem('cache_intl')       || '[]');
+let FIRST_AID         = JSON.parse(localStorage.getItem('cache_firstaid')   || '[]');
 
 // ── STATE ────────────────────────────────────────────────────
 let currentCategory = 'all';
@@ -1287,30 +1235,121 @@ document.addEventListener('DOMContentLoaded', async () => {
   setInterval(updateClock, 1000);
   checkNetwork();
   initMap();
+
+  // Show loading skeletons immediately
+  showLoadingState();
+
+  // Load all data from API (populates SERVICES, EMERGENCY_CONTACTS, etc.)
+  await loadAllData();
+
+  // Render contacts, countries, first aid immediately — they don't need GPS
   renderContacts();
   renderCountries();
   renderFirstAid();
-  renderServices('', 'all');
+  addServiceMarkers();
+
   loadPersonalContacts();
   cacheData();
   initVoice();
-  getLocation();
-  loadFromAPI();
-  window.addEventListener('online',  () => { isOnline = true;  checkNetwork(); loadFromAPI(); });
+
+  // Services render AFTER GPS resolves (getLocation calls renderServices internally)
+  // Show a "locating" placeholder in the meantime
+  document.getElementById('service-list').innerHTML = `
+    <div style="text-align:center;padding:40px 20px;color:var(--t3)">
+      <div style="font-size:32px;margin-bottom:12px">📍</div>
+      <div style="font-size:14px;font-weight:600;color:var(--t2);margin-bottom:6px">Getting your location…</div>
+      <div style="font-size:12px">Services will be sorted by distance once GPS is ready</div>
+    </div>`;
+
+  getLocation(); // this calls renderServices once GPS resolves
+
+  window.addEventListener('online',  () => { isOnline = true;  checkNetwork(); loadAllData().then(() => { renderContacts(); renderCountries(); renderFirstAid(); addServiceMarkers(); if (currentLocation) renderServices('', currentCategory); }); });
   window.addEventListener('offline', () => { isOnline = false; checkNetwork(); });
 });
 
-async function loadFromAPI() {
-  const [svcRes, ctcRes, intlRes, faRes] = await Promise.all([
-    apiFetch('/services?limit=100'),
+/**
+ * Fetches all four data collections from the API.
+ * Services are fetched WITHOUT coordinates here — just for the offline cache.
+ * The actual distance-sorted render happens in getLocation() via loadNearbyServices().
+ */
+async function loadAllData() {
+  const [ctcRes, intlRes, faRes, svcRes] = await Promise.all([
     apiFetch('/contacts'),
     apiFetch('/contacts/international'),
     apiFetch('/firstaid'),
+    apiFetch('/services?limit=200'),  // full list for offline cache + map markers
   ]);
-  if (svcRes.ok  && svcRes.data.data?.length)  localStorage.setItem('roadsos_services_cache', JSON.stringify(svcRes.data.data));
-  if (ctcRes.ok  && ctcRes.data.data?.length)  renderContactCards(ctcRes.data.data);
-  if (intlRes.ok && intlRes.data.data?.length) renderCountryCards(intlRes.data.data);
-  if (faRes.ok   && faRes.data.data?.length)   renderFirstAidCards(faRes.data.data);
+
+  if (svcRes.ok && svcRes.data?.data?.length) {
+    SERVICES = svcRes.data.data.map(s => ({
+      ...s,
+      cat: s.category || s.cat,
+      alt: s.altPhone  || s.alt || '',
+    }));
+    localStorage.setItem('cache_services', JSON.stringify(SERVICES));
+  }
+
+  if (ctcRes.ok && ctcRes.data?.data?.length) {
+    EMERGENCY_CONTACTS = ctcRes.data.data;
+    localStorage.setItem('cache_contacts', JSON.stringify(EMERGENCY_CONTACTS));
+  }
+
+  if (intlRes.ok && intlRes.data?.data?.length) {
+    COUNTRIES = intlRes.data.data.map(c => ({ ...c, name: c.country || c.name }));
+    localStorage.setItem('cache_intl', JSON.stringify(COUNTRIES));
+  }
+
+  if (faRes.ok && faRes.data?.data?.length) {
+    FIRST_AID = faRes.data.data;
+    localStorage.setItem('cache_firstaid', JSON.stringify(FIRST_AID));
+  }
+
+  localStorage.setItem('roadsos_cache_time', new Date().toISOString());
+}
+
+/**
+ * Loads services sorted by real distance from the user's GPS position.
+ * Uses the /api/services/nearby endpoint — the server does the Haversine sort.
+ * Falls back to client-side sort if the API call fails.
+ */
+async function loadNearbyServices(lat, lng, filter, cat) {
+  const list = document.getElementById('service-list');
+  list.innerHTML = [1,2,3].map(() => `<div class="skeleton skel-card"></div>`).join('');
+
+  const params = new URLSearchParams({ lat, lng, radius: 5000 });
+  if (cat && cat !== 'all') params.set('category', cat);
+
+  const res = await apiFetch(`/services/nearby?${params}`);
+
+  if (res.ok && res.data?.data?.length) {
+    // Server already sorted by distance — just filter by search term if needed
+    let data = res.data.data.map(s => ({
+      ...s,
+      cat: s.category || s.cat,
+      dist: s.distance_km,
+    }));
+    if (filter) {
+      const f = filter.toLowerCase();
+      data = data.filter(s =>
+        s.name.toLowerCase().includes(f) ||
+        (s.area||'').toLowerCase().includes(f) ||
+        (s.city||'').toLowerCase().includes(f)
+      );
+    }
+    renderServiceList(data);
+  } else {
+    // API failed — fall back to client-side haversine on cached SERVICES
+    renderServices(filter, cat);
+  }
+}
+
+function showLoadingState() {
+  document.getElementById('service-list').innerHTML =
+    [1,2,3].map(() => `<div class="skeleton skel-card"></div>`).join('');
+  document.getElementById('contacts-grid').innerHTML =
+    [1,2,3,4].map(() => `<div class="skeleton" style="height:120px;border-radius:var(--r)"></div>`).join('');
+  document.getElementById('firstaid-list').innerHTML =
+    [1,2,3].map(() => `<div class="skeleton" style="height:52px;border-radius:var(--r)"></div>`).join('');
 }
 
 function updateClock() {
@@ -1335,32 +1374,72 @@ function checkNetwork() {
 function getLocation() {
   const gpsDot = document.getElementById('gps-dot');
   const gpsStatus = document.getElementById('gps-status');
-  gpsDot.className = 'sd warn'; gpsStatus.textContent = 'Locating…';
+
+  // Show locating state immediately
+  gpsDot.className = 'sd warn';
+  gpsStatus.textContent = 'Locating…';
   document.getElementById('loc-address').textContent = 'Fetching location…';
+
   if (!navigator.geolocation) {
-    gpsDot.className = 'sd err'; gpsStatus.textContent = 'GPS N/A';
-    document.getElementById('loc-address').textContent = 'GPS not supported'; return;
+    gpsDot.className = 'sd err';
+    gpsStatus.textContent = 'GPS N/A';
+    document.getElementById('loc-address').textContent = 'GPS not supported';
+    renderServices('', currentCategory); // still render by rating
+    return;
   }
+
+  // Check permission state first if API available
+  if (navigator.permissions) {
+    navigator.permissions.query({ name: 'geolocation' }).then(result => {
+      if (result.state === 'denied') {
+        gpsDot.className = 'sd err';
+        gpsStatus.textContent = 'GPS Denied';
+        document.getElementById('loc-address').textContent = 'Location access denied';
+        document.getElementById('loc-detail').textContent = 'Allow location in browser settings';
+        // Fall back to cached location
+        const cached = localStorage.getItem('roadsos_last_location');
+        if (cached) {
+          const loc = JSON.parse(cached);
+          currentLocation = { lat: loc.lat, lng: loc.lng, acc: null };
+          document.getElementById('loc-address').textContent = loc.address + ' (cached)';
+          document.getElementById('loc-detail').textContent = 'Last known location';
+          document.getElementById('loc-coords').textContent = `${loc.lat.toFixed(5)}°N, ${loc.lng.toFixed(5)}°E`;
+          updateMapLocation(loc.lat, loc.lng);
+          loadNearbyServices(loc.lat, loc.lng, '', currentCategory);
+        } else {
+          renderServices('', currentCategory);
+        }
+        return;
+      }
+    }).catch(() => {}); // permissions API not supported — continue normally
+  }
+
   navigator.geolocation.getCurrentPosition(
     async (pos) => {
       const { latitude: lat, longitude: lng, accuracy } = pos.coords;
       currentLocation = { lat, lng, acc: accuracy };
-      gpsDot.className = 'sd on'; gpsStatus.textContent = 'GPS Active';
+      gpsDot.className = 'sd on';
+      gpsStatus.textContent = 'GPS Active';
       document.getElementById('loc-coords').textContent = `${lat.toFixed(5)}°N, ${lng.toFixed(5)}°E`;
       document.getElementById('loc-accuracy').style.display = 'flex';
       document.getElementById('loc-acc-val').textContent = `±${Math.round(accuracy)}m`;
+
       const geo = await apiFetch('/location/reverse', { method: 'POST', body: { lat, lng } });
       const address = geo.ok ? geo.data.data.address : `${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`;
       document.getElementById('loc-address').textContent = address;
-      document.getElementById('loc-detail').textContent = geo.ok ? `${geo.data.data.city}, ${geo.data.data.state}` : 'Location acquired';
+      document.getElementById('loc-detail').textContent = geo.ok
+        ? `${geo.data.data.city}, ${geo.data.data.state}` : 'Location acquired';
+
       localStorage.setItem('roadsos_last_location', JSON.stringify({ lat, lng, address, time: new Date().toISOString() }));
       apiFetch('/location/cache', { method: 'POST', body: { device_id: DEVICE_ID, lat, lng, address, accuracy } });
       updateMapLocation(lat, lng);
-      renderServices(document.getElementById('service-search').value, currentCategory);
+      await loadNearbyServices(lat, lng, document.getElementById('service-search').value, currentCategory);
       showToast('📍 Location updated', 'success');
     },
-    () => {
-      gpsDot.className = 'sd err'; gpsStatus.textContent = 'GPS Error';
+    (err) => {
+      gpsDot.className = 'sd err';
+      gpsStatus.textContent = err.code === 1 ? 'GPS Denied' : 'GPS Error';
+
       const cached = localStorage.getItem('roadsos_last_location');
       if (cached) {
         const loc = JSON.parse(cached);
@@ -1369,17 +1448,23 @@ function getLocation() {
         document.getElementById('loc-coords').textContent = `${loc.lat.toFixed(5)}°N, ${loc.lng.toFixed(5)}°E`;
         currentLocation = { lat: loc.lat, lng: loc.lng, acc: null };
         updateMapLocation(loc.lat, loc.lng);
+        loadNearbyServices(loc.lat, loc.lng, document.getElementById('service-search').value, currentCategory);
       } else {
         document.getElementById('loc-address').textContent = 'Location unavailable';
-        document.getElementById('loc-detail').textContent = 'Please enable GPS';
+        document.getElementById('loc-detail').textContent = err.code === 1
+          ? 'Allow location access in browser settings'
+          : 'Please enable GPS and refresh';
+        renderServices('', currentCategory);
       }
     },
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
   );
 }
 
 function haversine(lat1, lng1, lat2, lng2) {
-  if (!lat1 || !lng1 || !lat2 || !lng2) return 9999;
+  // Return null (not 9999) when any coordinate is missing
+  if (lat1 == null || lng1 == null || lat2 == null || lng2 == null) return null;
+  if (isNaN(lat1) || isNaN(lng1) || isNaN(lat2) || isNaN(lng2)) return null;
   const R = 6371, toRad = d => d * Math.PI / 180;
   const dLat = toRad(lat2-lat1), dLng = toRad(lng2-lng1);
   const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
@@ -1388,8 +1473,14 @@ function haversine(lat1, lng1, lat2, lng2) {
 
 // ── MAP ───────────────────────────────────────────────────────
 function initMap() {
+  // Default center: use first cached service coords, or world center
+  const firstSvc = SERVICES.find(s => s.lat && s.lng);
+  const defaultLat = firstSvc?.lat ?? 20.5937;  // India center if no data
+  const defaultLng = firstSvc?.lng ?? 78.9629;
+  const defaultZoom = firstSvc ? 12 : 5;
+
   map = L.map('emergency-map', { zoomControl: true, attributionControl: false })
-         .setView([28.6139, 77.2090], 12);
+         .setView([defaultLat, defaultLng], defaultZoom);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(map);
   addServiceMarkers();
 }
@@ -1438,70 +1529,81 @@ function renderServices(filter = '', cat = 'all') {
   const list = document.getElementById('service-list');
   list.innerHTML = [1,2,3].map(() => `<div class="skeleton skel-card"></div>`).join('');
   setTimeout(() => {
-    let data = SERVICES;
-    if (cat !== 'all') data = data.filter(s => s.cat === cat);
-    if (filter) data = data.filter(s =>
-      s.name.toLowerCase().includes(filter.toLowerCase()) ||
-      s.area.toLowerCase().includes(filter.toLowerCase())
-    );
-    if (currentLocation) {
-      data = data.map(s => ({ ...s, dist: haversine(currentLocation.lat, currentLocation.lng, s.lat, s.lng) }))
-                 .sort((a, b) => a.dist - b.dist);
-    } else {
-      data = data.map(s => ({ ...s, dist: null }));
+    let data = [...SERVICES];
+    const normCat = s => s.cat || s.category || 'hospital';
+
+    if (cat !== 'all') data = data.filter(s => normCat(s) === cat);
+    if (filter) {
+      const f = filter.toLowerCase();
+      data = data.filter(s =>
+        s.name.toLowerCase().includes(f) ||
+        (s.area||'').toLowerCase().includes(f) ||
+        (s.city||'').toLowerCase().includes(f)
+      );
     }
-    if (!data.length) { list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--t3)">No services found</div>`; return; }
-    list.innerHTML = data.map(s => {
-      const distText = s.dist !== null && s.dist < 9999 ? `${s.dist} km` : '—';
-      const color = getCatColor(s.cat);
-      const mapsUrl = `https://maps.google.com/?q=${s.lat},${s.lng}`;
-      const isEmg = s.cat === 'hospital' || s.cat === 'ambulance' || s.cat === 'trauma';
-      return `<div class="svc-card ripple" style="--cat-color:${color}">
-        <div class="svc-icon" style="background:${color}15">${s.icon}</div>
-        <div class="svc-info">
-          <div class="svc-name">${s.name}${isEmg ? `<span class="emg-badge">24x7</span>` : ''}</div>
-          <div class="svc-meta">
-            <span class="svc-dist">📍 ${distText}</span>
-            <span>${s.area}</span>
-            <span class="svc-st ${s.status}">${s.status.toUpperCase()}</span>
-            ${s.rating ? `<span>⭐ ${s.rating}</span>` : ''}
-          </div>
-          <div class="svc-phone">${s.phone}${s.extraInfo ? ' · ' + s.extraInfo : ''}</div>
-        </div>
-        <div class="svc-acts">
-          <button class="call-btn ripple" onclick="callNumber('${s.phone}')" title="Call">📞</button>
-          <a class="dir-btn ripple" href="${mapsUrl}" target="_blank" title="Directions">🧭</a>
-        </div>
-      </div>`;
-    }).join('');
-  }, 380);
+
+    if (currentLocation) {
+      // GPS available — compute real distances and sort nearest first
+      data = data.map(s => ({
+        ...s,
+        dist: haversine(currentLocation.lat, currentLocation.lng, s.lat, s.lng)
+      })).sort((a, b) => {
+        if (a.dist === null && b.dist === null) return 0;
+        if (a.dist === null) return 1;
+        if (b.dist === null) return -1;
+        return a.dist - b.dist;
+      });
+    } else {
+      // No GPS — sort by rating, show dash for distance
+      data = data.map(s => ({ ...s, dist: null }))
+                 .sort((a, b) => (b.rating||0) - (a.rating||0));
+    }
+
+    if (!data.length) {
+      list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--t3)">No services found</div>`;
+      return;
+    }
+
+    renderServiceList(data);
+  }, 200);
 }
 
 function renderServiceCards(data) {
-  const mapped = data.map(s => ({
-    ...s, cat: s.category || s.cat,
-    dist: currentLocation ? haversine(currentLocation.lat, currentLocation.lng, s.lat, s.lng) : null
-  })).sort((a, b) => (a.dist||9999) - (b.dist||9999));
+  // Unused — loadNearbyServices() handles API-sorted rendering.
+  renderServices(document.getElementById('service-search')?.value || '', currentCategory);
+}
+
+/**
+ * Core render function — takes a pre-sorted array and renders it.
+ * Called by both renderServices() (client sort) and loadNearbyServices() (server sort).
+ */
+function renderServiceList(data) {
   const list = document.getElementById('service-list');
-  if (!mapped.length) { list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--t3)">No services found</div>`; return; }
-  list.innerHTML = mapped.map(s => {
-    const color = getCatColor(s.cat || s.category);
-    const dist = s.dist !== null && s.dist < 9999 ? `${s.dist} km` : (s.distance_km ? `${s.distance_km} km` : '—');
-    const mapsUrl = `https://maps.google.com/?q=${s.lat||0},${s.lng||0}`;
+  if (!data.length) {
+    list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--t3)">No services found near your location</div>`;
+    return;
+  }
+  list.innerHTML = data.map(s => {
+    const cat2     = s.cat || s.category || 'hospital';
+    const color    = getCatColor(cat2);
+    const distText = s.dist !== null && s.dist !== undefined ? `${s.dist} km` : '—';
+    const mapsUrl  = `https://maps.google.com/?q=${s.lat||0},${s.lng||0}`;
+    const isEmg    = cat2 === 'hospital' || cat2 === 'ambulance' || cat2 === 'trauma';
     return `<div class="svc-card ripple" style="--cat-color:${color}">
       <div class="svc-icon" style="background:${color}15">${s.icon||'🏥'}</div>
       <div class="svc-info">
-        <div class="svc-name">${s.name}</div>
+        <div class="svc-name">${s.name}${isEmg ? `<span class="emg-badge">24x7</span>` : ''}</div>
         <div class="svc-meta">
-          <span class="svc-dist">📍 ${dist}</span><span>${s.area||''}</span>
+          <span class="svc-dist">📍 ${distText}</span>
+          <span>${s.area||s.city||''}</span>
           <span class="svc-st ${s.status}">${s.status.toUpperCase()}</span>
-          ${s.rating?`<span>⭐ ${s.rating}</span>`:''}
+          ${s.rating ? `<span>⭐ ${s.rating}</span>` : ''}
         </div>
-        <div class="svc-phone">${s.phone}${s.extraInfo||s.extra_info?' · '+(s.extraInfo||s.extra_info):''}</div>
+        <div class="svc-phone">${s.phone}${s.extraInfo ? ' · ' + s.extraInfo : ''}</div>
       </div>
       <div class="svc-acts">
-        <button class="call-btn ripple" onclick="callNumber('${s.phone}')">📞</button>
-        <a class="dir-btn ripple" href="${mapsUrl}" target="_blank">🧭</a>
+        <button class="call-btn ripple" onclick="callNumber('${s.phone}')" title="Call">📞</button>
+        <a class="dir-btn ripple" href="${mapsUrl}" target="_blank" title="Directions">🧭</a>
       </div>
     </div>`;
   }).join('');
@@ -1511,9 +1613,21 @@ function selectCategory(cat, el) {
   currentCategory = cat;
   document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  renderServices(document.getElementById('service-search').value, cat);
+  const filter = document.getElementById('service-search').value;
+  if (currentLocation) {
+    loadNearbyServices(currentLocation.lat, currentLocation.lng, filter, cat);
+  } else {
+    renderServices(filter, cat);
+  }
 }
-function filterServices() { renderServices(document.getElementById('service-search').value, currentCategory); }
+function filterServices() {
+  const filter = document.getElementById('service-search').value;
+  if (currentLocation) {
+    loadNearbyServices(currentLocation.lat, currentLocation.lng, filter, currentCategory);
+  } else {
+    renderServices(filter, currentCategory);
+  }
+}
 
 // ── RENDER CONTACTS ───────────────────────────────────────────
 function renderContactCards(data) {
@@ -1640,9 +1754,20 @@ async function activateSOS() {
 
   let nearestHospital = null;
   if (currentLocation) {
-    nearestHospital = SERVICES.filter(s => s.cat === 'hospital')
-      .map(s => ({ ...s, dist: haversine(currentLocation.lat, currentLocation.lng, s.lat, s.lng) }))
-      .sort((a, b) => a.dist - b.dist)[0];
+    // Ask the server for the nearest hospital — it has all 88 services with correct coords
+    const nhRes = await apiFetch(
+      `/services/nearby?lat=${currentLocation.lat}&lng=${currentLocation.lng}&category=hospital&radius=5000`
+    );
+    if (nhRes.ok && nhRes.data?.data?.length) {
+      nearestHospital = { ...nhRes.data.data[0], dist: nhRes.data.data[0].distance_km };
+    } else {
+      // Fallback to client-side search on cached SERVICES
+      const candidates = SERVICES.filter(s => (s.cat||s.category) === 'hospital')
+        .map(s => ({ ...s, dist: haversine(currentLocation.lat, currentLocation.lng, s.lat, s.lng) }))
+        .filter(s => s.dist !== null)
+        .sort((a, b) => a.dist - b.dist);
+      nearestHospital = candidates[0] || null;
+    }
   }
 
   document.getElementById('sos-modal-content').innerHTML = `
@@ -1730,6 +1855,7 @@ function showAlert(icon, text, sub) {
 
 // ── OFFLINE TOOLKIT ───────────────────────────────────────────
 function showOfflineContacts() {
+  if (!EMERGENCY_CONTACTS.length) { showToast('No cached contacts yet', 'info'); return; }
   alert('📞 Emergency Numbers:\n\n' + EMERGENCY_CONTACTS.map(c => `${c.icon} ${c.name}: ${c.number}`).join('\n'));
 }
 function showFirstAidQuick() {
@@ -1745,18 +1871,21 @@ function showLastLocation() {
   } else alert('No cached location. Please enable GPS and refresh.');
 }
 function showOfflineServices() {
-  alert('🏥 Nearest Services (cached):\n\n' + SERVICES.slice(0,5).map(s => `${s.icon} ${s.name} — ${s.phone}`).join('\n'));
+  if (!SERVICES.length) { showToast('No cached services yet', 'info'); return; }
+  const top5 = SERVICES.slice(0, 5);
+  alert('🏥 Nearest Services (cached):\n\n' + top5.map(s => `${s.icon} ${s.name} — ${s.phone}`).join('\n'));
 }
 function cacheData() {
-  try {
-    localStorage.setItem('roadsos_services', JSON.stringify(SERVICES));
-    localStorage.setItem('roadsos_contacts_cache', JSON.stringify(EMERGENCY_CONTACTS));
-    localStorage.setItem('roadsos_cache_time', new Date().toISOString());
-    document.getElementById('cache-badge').textContent = '✅ Cached';
-    document.getElementById('cache-badge').className = 'badge green';
-  } catch(e) {
-    document.getElementById('cache-badge').textContent = '⚠️ Cache Failed';
-    document.getElementById('cache-badge').className = 'badge orange';
+  // Data is already cached by loadAllData() into localStorage.
+  // Just update the badge to reflect current cache state.
+  const cacheTime = localStorage.getItem('roadsos_cache_time');
+  const badge = document.getElementById('cache-badge');
+  if (cacheTime && SERVICES.length > 0) {
+    badge.textContent = `✅ ${SERVICES.length} services cached`;
+    badge.className = 'badge green';
+  } else {
+    badge.textContent = '⏳ Caching…';
+    badge.className = 'badge orange';
   }
 }
 

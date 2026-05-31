@@ -5,9 +5,27 @@ const express = require('express');
 const router  = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const { db, collection, doc, getDoc, getDocs, setDoc, updateDoc,
-        query, orderBy, limit } = require('../firebase');
+        query, orderBy, limit, where } = require('../firebase');
 
 function docToObj(d) { return { id: d.id, ...d.data() }; }
+
+/** Fetch the top emergency numbers from Firestore dynamically */
+async function getEmergencyNumbers() {
+  try {
+    const snap = await getDocs(
+      query(collection(db, 'emergencyContacts'), where('country', '==', 'India'))
+    );
+    const contacts = snap.docs.map(docToObj);
+    return {
+      national:  contacts.find(c => c.number === '112')?.number || '112',
+      ambulance: contacts.find(c => c.type   === 'medical' && c.number === '108')?.number || '108',
+      police:    contacts.find(c => c.type   === 'police')?.number || '100',
+      fire:      contacts.find(c => c.type   === 'fire')?.number   || '101',
+    };
+  } catch (_) {
+    return { national: '112', ambulance: '108', police: '100', fire: '101' };
+  }
+}
 
 // POST /api/sos
 router.post('/', async (req, res) => {
@@ -26,20 +44,21 @@ router.post('/', async (req, res) => {
     };
     await setDoc(doc(db,'sosEvents',id), data);
     console.log(`🚨 SOS — ${id} | ${device_id} | ${lat},${lng}`);
+    const emergencyNumbers = await getEmergencyNumbers();
     res.status(201).json({
       success: true,
       message: 'SOS activated. Emergency services have been notified.',
       data: { id, ...data },
-      emergency_numbers: { national:'112', ambulance:'108', police:'100' },
+      emergency_numbers: emergencyNumbers,
     });
   } catch (err) {
     console.error('POST /sos:', err.message);
-    // Still return success to the user — SOS must never fail silently
+    // SOS must never fail — return fallback even if Firestore is down
     res.status(201).json({
       success: true,
       message: 'SOS activated (offline fallback).',
       data: { id: uuidv4(), status:'active', createdAt: new Date().toISOString() },
-      emergency_numbers: { national:'112', ambulance:'108', police:'100' },
+      emergency_numbers: { national:'112', ambulance:'108', police:'100', fire:'101' },
     });
   }
 });

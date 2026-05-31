@@ -33,6 +33,7 @@ app.use('/api/sos',       require('./server/routes/sos'));
 app.use('/api/reports',   require('./server/routes/reports'));
 app.use('/api/firstaid',  require('./server/routes/firstaid'));
 app.use('/api/location',  require('./server/routes/location'));
+app.use('/api/config',    require('./server/routes/config'));
 
 app.get('/api/health', (req, res) => {
   res.json({ success:true, status:'ok', app:'ROADSOS', db:'Firebase Firestore',
